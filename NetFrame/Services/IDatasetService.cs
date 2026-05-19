@@ -20,5 +20,23 @@ namespace NetFrame.Services
             string memberName = null,
             RetrieveContentOptions options = null,
             CancellationToken cancellationToken = default);
+
+        Task<string> WriteDatasetContentAsync(
+            string datasetName,
+            string memberName = null,
+            string content = "",
+            string volser = null,
+            WriteContentOptions options = null,
+            CancellationToken cancellationToken = default);
+
+
+        Task CreateDatasetAsync(
+            string datasetName,
+            CreateDatasetRequest requestBody,
+            CreateDatasetOptions options = null,
+            CancellationToken cancellationToken = default);
+
     }
+
+
 }

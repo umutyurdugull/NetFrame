@@ -29,7 +29,9 @@
         public string SessionRef { get; set; }
 
         public bool? ReleaseEnq { get; set; }
+        public string TargetSystemUser { get; set; }
 
+        public string TargetSystemPassword { get; set; }
         public string DsnameEncoding { get; set; }
     }
 }
