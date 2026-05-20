@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,6 +6,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>ecdc1fc6-c5a5-4c49-b7c0-5234c9ee191f</UserSecretsId>
+    
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>NetFrame</PackageId>
+    <Version>1.0.2</Version>
+    <Authors>Umut Yurdugul</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>z/OSMF REST API wrapper for .NET applications.</Description>
+    <PackageTags>mainframe;zosmf;zos;api;wrapper;jcl</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
