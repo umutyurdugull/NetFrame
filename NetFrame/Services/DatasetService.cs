@@ -320,7 +320,8 @@ namespace NetFrame.Services
 
 
             using var request = new HttpRequestMessage(HttpMethod.Put, endpointBuilder.ToString());
-            request.Content = new StringContent(content ?? string.Empty, Encoding.UTF8, options.ContentType);
+            var encoding = new UTF8Encoding(false); // hata atiyo mainframe'de 
+            request.Content = new StringContent(content ?? string.Empty, encoding, options.ContentType);
             if (!string.IsNullOrEmpty(options.IfMatch))
             {
                 request.Headers.TryAddWithoutValidation("If-Match", options.IfMatch);

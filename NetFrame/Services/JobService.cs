@@ -2,8 +2,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NetFrame.Models;
 using System;
+using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,12 +18,18 @@ namespace NetFrame.Services
         private readonly HttpClient _httpClient;
         private readonly ILogger<JobService> _logger;
         private readonly ZosmfConfig _config;
+        private readonly IDatasetService _datasetService;
 
-        public JobService(HttpClient httpClient, ILogger<JobService> logger, IOptions<ZosmfConfig> config)
+        public JobService(
+            HttpClient httpClient, 
+            ILogger<JobService> logger, 
+            IOptions<ZosmfConfig> config,
+            IDatasetService datasetService)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _config = config?.Value ?? throw new ArgumentNullException(nameof(config));
+            _datasetService = datasetService ?? throw new ArgumentNullException(nameof(datasetService));
         }
 
         public async Task<string> GetJobStatusAsync(string jobName, string jobId, CancellationToken cancellationToken = default)
@@ -42,17 +51,62 @@ namespace NetFrame.Services
             }
         }
 
-        public async Task<string> SubmitJobAndWaitAsync(string datasetPath, CancellationToken cancellationToken = default)
+        public async Task<string> SubmitJobAndWaitAsync(JobSubmissionOptions options, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(datasetPath)) throw new ArgumentException("Dataset path cannot be empty.", nameof(datasetPath));
+            if (options == null) throw new ArgumentNullException(nameof(options));
 
-            var endpoint = "/zosmf/restjobs/jobs";
-            var requestBody = new { file = datasetPath };
+            HttpRequestMessage? request = null;
 
             try
             {
-                var response = await _httpClient.PutAsJsonAsync(endpoint, requestBody, cancellationToken);
-                response.EnsureSuccessStatusCode();
+                //bilgisayardan y�keleme
+                if (!string.IsNullOrEmpty(options.LocalFilePath))
+                {
+                    if (string.IsNullOrEmpty(options.DestinationDataset))
+                        throw new ArgumentException("Destination dataset is required for local file upload.");
+
+                    var fileContent = await File.ReadAllTextAsync(options.LocalFilePath, cancellationToken);
+                    await _datasetService.WriteDatasetContentAsync(
+                        options.DestinationDataset,
+                        options.DestinationMember,
+                        fileContent,
+                        cancellationToken: cancellationToken);
+
+                    // Formatting as "//'DATASET(MEMBER)'" as required by z/OSMF
+                    var memberSuffix = !string.IsNullOrEmpty(options.DestinationMember) ? $"({options.DestinationMember})" : "";
+                    options.DatasetPath = $"//'{options.DestinationDataset}{memberSuffix}'";
+                }
+
+                // jcl mainframe
+                if (!string.IsNullOrEmpty(options.DatasetPath))
+                {
+                    request = new HttpRequestMessage(HttpMethod.Put, "/zosmf/restjobs/jobs");
+                    var requestBody = new { file = options.DatasetPath };
+                    request.Content = JsonContent.Create(requestBody);
+                }
+                // jcl kodun icinde 
+                else if (!string.IsNullOrEmpty(options.JclContent))
+                {
+                    request = new HttpRequestMessage(HttpMethod.Put, "/zosmf/restjobs/jobs");
+                    request.Content = new StringContent(options.JclContent, Encoding.UTF8, "text/plain");
+                    if (!string.IsNullOrEmpty(options.IntrdrMode))
+                    {
+                        request.Headers.Add("X-IBM-Intrdr-Mode", options.IntrdrMode);
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException("Either DatasetPath, JclContent, or LocalFilePath must be provided.");
+                }
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("z/OSMF API Error: {StatusCode} - {ErrorDetails}", response.StatusCode, errorContent);
+                    response.EnsureSuccessStatusCode();
+                }
 
                 var jobResponse = await response.Content.ReadAsStringAsync(cancellationToken);
                 if (string.IsNullOrEmpty(jobResponse))
@@ -60,48 +114,53 @@ namespace NetFrame.Services
                     throw new InvalidOperationException("Empty response received from job submission.");
                 }
 
-                var job = JsonNode.Parse(jobResponse);
-                string? jobName = job?["jobname"]?.ToString();
-                string? jobId = job?["jobid"]?.ToString();
-                string? currentStatus = job?["status"]?.ToString();
-
-                if (string.IsNullOrEmpty(jobName) || string.IsNullOrEmpty(jobId))
-                {
-                    throw new InvalidOperationException("Job name or ID not found in submission response.");
-                }
-
-                int attempt = 0;
-                while (currentStatus != "OUTPUT" && attempt < _config.MaxPollingAttempts)
-                {
-                    _logger.LogInformation("Job {JobName} status: {Status}. Polling attempt {Attempt}/{Max}", jobName, currentStatus, attempt + 1, _config.MaxPollingAttempts);
-                    
-                    await Task.Delay(TimeSpan.FromSeconds(_config.PollingIntervalSeconds), cancellationToken);
-
-                    string statusResponse = await GetJobStatusAsync(jobName, jobId, cancellationToken);
-                    var updatedJob = JsonNode.Parse(statusResponse);
-                    currentStatus = updatedJob?["status"]?.ToString();
-                    jobResponse = statusResponse;
-                    
-                    attempt++;
-                }
-
-                if (currentStatus != "OUTPUT")
-                {
-                    _logger.LogWarning("Job {JobName} did not reach OUTPUT status within the allocated time.", jobName);
-                }
-
-                return jobResponse;
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("Job submission/wait was cancelled.");
-                throw;
+                return await PollJobStatusAsync(jobResponse, cancellationToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error submitting job for dataset: {DatasetPath}", datasetPath);
+                _logger.LogError(ex, "Error submitting job.");
                 throw;
             }
+            finally
+            {
+                request?.Dispose();
+            }
+        }
+
+        private async Task<string> PollJobStatusAsync(string initialResponse, CancellationToken cancellationToken)
+        {
+            var job = JsonNode.Parse(initialResponse);
+            string? jobName = job?["jobname"]?.ToString();
+            string? jobId = job?["jobid"]?.ToString();
+            string? currentStatus = job?["status"]?.ToString();
+
+            if (string.IsNullOrEmpty(jobName) || string.IsNullOrEmpty(jobId))
+            {
+                throw new InvalidOperationException("Job name or ID not found in submission response.");
+            }
+
+            string jobResponse = initialResponse;
+            int attempt = 0;
+            while (currentStatus != "OUTPUT" && attempt < _config.MaxPollingAttempts)
+            {
+                _logger.LogInformation("Job {JobName} status: {Status}. Polling attempt {Attempt}/{Max}", jobName, currentStatus, attempt + 1, _config.MaxPollingAttempts);
+
+                await Task.Delay(TimeSpan.FromSeconds(_config.PollingIntervalSeconds), cancellationToken);
+
+                string statusResponse = await GetJobStatusAsync(jobName, jobId, cancellationToken);
+                var updatedJob = JsonNode.Parse(statusResponse);
+                currentStatus = updatedJob?["status"]?.ToString();
+                jobResponse = statusResponse;
+
+                attempt++;
+            }
+
+            if (currentStatus != "OUTPUT")
+            {
+                _logger.LogWarning("Job {JobName} did not reach OUTPUT status within the allocated time.", jobName);
+            }
+
+            return jobResponse;
         }
     }
 }
