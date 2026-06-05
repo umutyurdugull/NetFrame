@@ -1,27 +1,3 @@
-# How to Run 
-
-
-1 - Open Properties
-2 - Create a file named launchSettings.json
-3 - Paste the code below 
-``` 
-{
-  "profiles": {
-    "NetFrame": {
-      "commandName": "Project",
-      "environmentVariables": {
-        "ZOSMF_BASE_URL": "ZOSMF_BASE_URL:PORT",
-        "ZOSMF_USERNAME": "ZOSMF_USERNAME",
-        "ZOSMF_PASSWORD": "ZOSMF_PASSWORD"
-      }
-    }
-  }
-}
-``` 
-4 - Run the project
-
-## You can review the ```ZosmfService.cs ``` to see how the system works.
-
 
 ## Documentation 
  
