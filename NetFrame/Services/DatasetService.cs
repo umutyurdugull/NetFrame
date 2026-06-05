@@ -277,8 +277,6 @@ namespace NetFrame.Services
             }
         }
 
-
-
         //COBOL dosyasının içine string'den gelen kodu yazdırmak istiyorum mesela? 
         /*
                 IDENTIFICATION DIVISION.
@@ -286,11 +284,7 @@ namespace NetFrame.Services
        PROCEDURE DIVISION.
            DISPLAY 'HELLO TURKEY!'.
            GOBACK.
-            
-
-
-
-         */
+            */
         public async Task<string> WriteDatasetContentAsync(
             string datasetName,
             string memberName = null,
@@ -316,9 +310,6 @@ namespace NetFrame.Services
             {
                 endpointBuilder.Append($"({Uri.EscapeDataString(memberName)})");
             }
-
-
-
             using var request = new HttpRequestMessage(HttpMethod.Put, endpointBuilder.ToString());
             var encoding = new UTF8Encoding(false); // hata atiyo mainframe'de 
             request.Content = new StringContent(content ?? string.Empty, encoding, options.ContentType);
