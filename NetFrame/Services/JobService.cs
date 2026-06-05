@@ -59,7 +59,7 @@ namespace NetFrame.Services
 
             try
             {
-                //bilgisayardan y�keleme
+                
                 if (!string.IsNullOrEmpty(options.LocalFilePath))
                 {
                     if (string.IsNullOrEmpty(options.DestinationDataset))
@@ -161,6 +161,146 @@ namespace NetFrame.Services
             }
 
             return jobResponse;
+        }
+
+        public async Task<System.Collections.Generic.List<ZosJob>> ListJobsAsync(string? owner = null, string? prefix = null, string? jobId = null, string? maxJobs = null, string? execData = null, string? status = null, CancellationToken cancellationToken = default)
+        {
+            var queryParams = new System.Collections.Generic.List<string>();
+            if (!string.IsNullOrWhiteSpace(owner)) queryParams.Add($"owner={Uri.EscapeDataString(owner)}");
+            if (!string.IsNullOrWhiteSpace(prefix)) queryParams.Add($"prefix={Uri.EscapeDataString(prefix)}");
+            if (!string.IsNullOrWhiteSpace(jobId)) queryParams.Add($"jobid={Uri.EscapeDataString(jobId)}");
+            if (!string.IsNullOrWhiteSpace(maxJobs)) queryParams.Add($"max-jobs={Uri.EscapeDataString(maxJobs)}");
+            if (!string.IsNullOrWhiteSpace(execData)) queryParams.Add($"exec-data={Uri.EscapeDataString(execData)}");
+            if (!string.IsNullOrWhiteSpace(status)) queryParams.Add($"status={Uri.EscapeDataString(status)}");
+
+            var endpoint = "/zosmf/restjobs/jobs";
+            if (queryParams.Count > 0)
+            {
+                endpoint += "?" + string.Join("&", queryParams);
+            }
+
+            try
+            {
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<System.Collections.Generic.List<ZosJob>>(cancellationToken: cancellationToken) ?? new System.Collections.Generic.List<ZosJob>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error listing jobs");
+                throw;
+            }
+        }
+
+        public async Task<System.Collections.Generic.List<ZosJobFile>> ListJobFilesAsync(string jobName, string jobId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(jobName)) throw new ArgumentException("Job name cannot be empty.", nameof(jobName));
+            if (string.IsNullOrWhiteSpace(jobId)) throw new ArgumentException("Job ID cannot be empty.", nameof(jobId));
+
+            var endpoint = $"/zosmf/restjobs/jobs/{Uri.EscapeDataString(jobName)}/{Uri.EscapeDataString(jobId)}/files";
+            
+            try
+            {
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<System.Collections.Generic.List<ZosJobFile>>(cancellationToken: cancellationToken) ?? new System.Collections.Generic.List<ZosJobFile>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error listing files for job {JobName} ({JobId})", jobName, jobId);
+                throw;
+            }
+        }
+
+        public async Task<string> GetJobFileRecordsAsync(string jobName, string jobId, string fileId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(jobName)) throw new ArgumentException("Job name cannot be empty.", nameof(jobName));
+            if (string.IsNullOrWhiteSpace(jobId)) throw new ArgumentException("Job ID cannot be empty.", nameof(jobId));
+            if (string.IsNullOrWhiteSpace(fileId)) throw new ArgumentException("File ID cannot be empty.", nameof(fileId));
+
+            var endpoint = $"/zosmf/restjobs/jobs/{Uri.EscapeDataString(jobName)}/{Uri.EscapeDataString(jobId)}/files/{Uri.EscapeDataString(fileId)}/records";
+            
+            try
+            {
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reading records for file {FileId} of job {JobName} ({JobId})", fileId, jobName, jobId);
+                throw;
+            }
+        }
+
+        public async Task<JobFeedback> HoldJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default)
+        {
+            var endpoint = $"/zosmf/restjobs/jobs/{Uri.EscapeDataString(jobName)}/{Uri.EscapeDataString(jobId)}";
+            var requestBody = new { request = "hold", version };
+            return await PutJobActionAsync(endpoint, requestBody, cancellationToken);
+        }
+
+        public async Task<JobFeedback> ReleaseJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default)
+        {
+            var endpoint = $"/zosmf/restjobs/jobs/{Uri.EscapeDataString(jobName)}/{Uri.EscapeDataString(jobId)}";
+            var requestBody = new { request = "release", version };
+            return await PutJobActionAsync(endpoint, requestBody, cancellationToken);
+        }
+
+        public async Task<JobFeedback> ChangeJobClassAsync(string jobName, string jobId, string newJobClass, string version = "2.0", CancellationToken cancellationToken = default)
+        {
+            var endpoint = $"/zosmf/restjobs/jobs/{Uri.EscapeDataString(jobName)}/{Uri.EscapeDataString(jobId)}";
+            var requestBody = new { @class = newJobClass, version };
+            return await PutJobActionAsync(endpoint, requestBody, cancellationToken);
+        }
+
+        public async Task<JobFeedback> CancelJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default)
+        {
+            var endpoint = $"/zosmf/restjobs/jobs/{Uri.EscapeDataString(jobName)}/{Uri.EscapeDataString(jobId)}";
+            var requestBody = new { request = "cancel", version };
+            return await PutJobActionAsync(endpoint, requestBody, cancellationToken);
+        }
+
+        public async Task<JobFeedback> DeleteJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default)
+        {
+            var endpoint = $"/zosmf/restjobs/jobs/{Uri.EscapeDataString(jobName)}/{Uri.EscapeDataString(jobId)}";
+            using var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+            request.Headers.Add("X-IBM-Job-Modify-Version", version);
+
+            try
+            {
+                var response = await _httpClient.SendAsync(request, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
+                {
+                    return new JobFeedback { Status = "202", Message = "Accepted" };
+                }
+                return await response.Content.ReadFromJsonAsync<JobFeedback>(cancellationToken: cancellationToken) ?? new JobFeedback();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting job {JobName} ({JobId})", jobName, jobId);
+                throw;
+            }
+        }
+
+        private async Task<JobFeedback> PutJobActionAsync(string endpoint, object requestBody, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsJsonAsync(endpoint, requestBody, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
+                {
+                    return new JobFeedback { Status = "202", Message = "Accepted" };
+                }
+                return await response.Content.ReadFromJsonAsync<JobFeedback>(cancellationToken: cancellationToken) ?? new JobFeedback();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error executing job action at {Endpoint}", endpoint);
+                throw;
+            }
         }
     }
 }

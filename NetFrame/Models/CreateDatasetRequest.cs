@@ -6,19 +6,19 @@ namespace NetFrame.Models
     {
         [JsonPropertyName("volser")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Volser { get; set; }
+        public string? Volser { get; set; }
 
         [JsonPropertyName("unit")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Unit { get; set; }
+        public string? Unit { get; set; }
 
         [JsonPropertyName("dsorg")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Dsorg { get; set; }
+        public string? Dsorg { get; set; }
 
         [JsonPropertyName("alcunit")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Alcunit { get; set; }
+        public string? Alcunit { get; set; }
 
         [JsonPropertyName("primary")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -38,7 +38,7 @@ namespace NetFrame.Models
 
         [JsonPropertyName("recfm")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Recfm { get; set; }
+        public string? Recfm { get; set; }
 
         [JsonPropertyName("blksize")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -50,22 +50,22 @@ namespace NetFrame.Models
 
         [JsonPropertyName("storclass")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Storclass { get; set; }
+        public string? Storclass { get; set; }
 
         [JsonPropertyName("mgntclass")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Mgntclass { get; set; }
+        public string? Mgntclass { get; set; }
 
         [JsonPropertyName("dataclass")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Dataclass { get; set; }
+        public string? Dataclass { get; set; }
 
         [JsonPropertyName("dsntype")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Dsntype { get; set; }
+        public string? Dsntype { get; set; }
 
         [JsonPropertyName("like")]
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string Like { get; set; }
+        public string? Like { get; set; }
     }
 }

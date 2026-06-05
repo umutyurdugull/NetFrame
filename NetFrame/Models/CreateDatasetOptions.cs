@@ -2,10 +2,10 @@
 {
     public class CreateDatasetOptions
     {
-        public string TargetSystem { get; set; }
+        public string? TargetSystem { get; set; }
 
-        public string TargetSystemUser { get; set; }
+        public string? TargetSystemUser { get; set; }
 
-        public string TargetSystemPassword { get; set; }
+        public string? TargetSystemPassword { get; set; }
     }
 }

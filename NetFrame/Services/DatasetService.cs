@@ -63,7 +63,7 @@ namespace NetFrame.Services
         public async Task CreateDatasetAsync(
             string datasetName,
             CreateDatasetRequest requestBody,
-            CreateDatasetOptions options = null,
+            CreateDatasetOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(datasetName))
@@ -158,10 +158,10 @@ namespace NetFrame.Services
             }
         }
 
-        public async Task<string> RetrieveDatasetContentAsync(
+        public async Task<string?> RetrieveDatasetContentAsync(
             string datasetName,
-            string memberName = null,
-            RetrieveContentOptions options = null,
+            string? memberName = null,
+            RetrieveContentOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(datasetName))
@@ -287,10 +287,10 @@ namespace NetFrame.Services
             */
         public async Task<string> WriteDatasetContentAsync(
             string datasetName,
-            string memberName = null,
+            string? memberName = null,
             string content = "",
-            string volser = null,
-            WriteContentOptions options = null,
+            string? volser = null,
+            WriteContentOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(datasetName))
@@ -364,7 +364,7 @@ namespace NetFrame.Services
 
                 var response = await _httpClient.SendAsync(request, cancellationToken);
                 response.EnsureSuccessStatusCode();
-                return response.Content.ToString();
+                return await response.Content.ReadAsStringAsync(cancellationToken) ?? string.Empty;
 
 
             }
