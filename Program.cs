@@ -1,56 +1,68 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NetFrame.Extensions;
-using NetFrame.Models;
 using NetFrame.Services;
 using System;
 using System.Threading.Tasks;
 
-var services = new ServiceCollection();
-
-services.AddLogging(builder =>
+namespace NetFrame
 {
-    builder.AddConsole();
-    builder.SetMinimumLevel(LogLevel.Information);
-});
+    internal class Program
+    {
+        static async Task Main(string[] args)
+        {
+            var services = new ServiceCollection();
 
-var baseUrl = Environment.GetEnvironmentVariable("ZOSMF_BASE_URL");
-var username = Environment.GetEnvironmentVariable("ZOSMF_USERNAME");
-var password = Environment.GetEnvironmentVariable("ZOSMF_PASSWORD");
+            services.AddLogging(builder =>
+            {
+                builder.AddConsole();
+                builder.SetMinimumLevel(LogLevel.Warning);
+            });
 
-if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-{
-    Console.WriteLine("Missing ZOSMF configuration. Set ZOSMF_BASE_URL, ZOSMF_USERNAME, and ZOSMF_PASSWORD environment variables.");
-    return;
-}
+            string zosmfUrl = "https://204.90.115.200:10443";
+            string username = "Z88116";
+            string password = "GRB53ONI";
 
-services.AddZosmf(options =>
-{
-    options.BaseUrl = baseUrl;
-    options.Username = username;
-    options.Password = password;
-    options.AllowInsecureConnections = true; 
-    options.PollingIntervalSeconds = 5;
-    options.MaxPollingAttempts = 20;
-});
+            services.AddZosmf(options =>
+            {
+                options.BaseUrl = zosmfUrl;
+                options.Username = username;
+                options.Password = password;
+                options.AllowInsecureConnections = true;
+            });
 
-var serviceProvider = services.BuildServiceProvider();
+            var serviceProvider = services.BuildServiceProvider();
+            var datasetService = serviceProvider.GetRequiredService<IDatasetService>();
 
-var jobService = serviceProvider.GetRequiredService<IJobService>();
-var datasetService = serviceProvider.GetRequiredService<IDatasetService>();
+            try
+            {
+                try
+                {
+                    Console.WriteLine("Reading ZXP.PUBLIC.JCL(CHKSQL)...");
+                    string content = await datasetService.RetrieveDatasetContentAsync("ZXP.PUBLIC.JCL", "CHKSQL");
+                    Console.WriteLine("Content of CHKSQL:\n" + content);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error CHKSQL: " + ex.Message);
+                }
+                Console.WriteLine();
 
-
-var case3Options = new JobSubmissionOptions
-{
-    LocalFilePath = "simple.jcl",
-    DestinationDataset = "Z88116.JCL",
-    DestinationMember = "HELLO"
-};
-
-string case3Response = await jobService.SubmitJobAndWaitAsync(case3Options);
-
-if (!string.IsNullOrEmpty(case3Response))
-{
-    
-    Console.WriteLine(case3Response);
+                try
+                {
+                    Console.WriteLine("Reading ZXP.PUBLIC.JCL(DB2BND)...");
+                    string content = await datasetService.RetrieveDatasetContentAsync("ZXP.PUBLIC.JCL", "DB2BND");
+                    Console.WriteLine("Content of DB2BND:\n" + content);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error DB2BND: " + ex.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Global Error: " + ex.Message);
+            }
+        }
+    }
 }
