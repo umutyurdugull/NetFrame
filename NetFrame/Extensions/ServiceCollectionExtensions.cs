@@ -51,7 +51,7 @@ namespace NetFrame.Extensions
                 var config = sp.GetRequiredService<IOptions<Db2Config>>().Value;
                 if (!string.IsNullOrWhiteSpace(config.BaseUrl))
                 {
-                    client.BaseAddress = new Uri(config.BaseUrl);
+                    client.BaseAddress = new Uri(EnsureAbsoluteUriScheme(config.BaseUrl));
                 }
             })
             .ConfigurePrimaryHttpMessageHandler(sp =>
@@ -80,7 +80,7 @@ namespace NetFrame.Extensions
                     throw new InvalidOperationException("ZosmfConfig.BaseUrl is required.");
                 }
 
-                client.BaseAddress = new Uri(config.BaseUrl);
+                client.BaseAddress = new Uri(EnsureAbsoluteUriScheme(config.BaseUrl));
                 client.Timeout = TimeSpan.FromSeconds(config.TimeoutSeconds);
             })
             .AddHttpMessageHandler<ZosmfAuthHandler>()
@@ -92,7 +92,12 @@ namespace NetFrame.Extensions
                 return CreateHandler(config, sp.GetRequiredService<ILogger<HttpClientHandler>>());
             });
 
-            builder.AddStandardResilienceHandler();
+            builder.AddStandardResilienceHandler(options =>
+            {
+                options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+                options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
+                options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(90);
+            });
 
             return builder;
         }
@@ -128,6 +133,17 @@ namespace NetFrame.Extensions
                 };
             }
             return handler;
+        }
+
+        private static string EnsureAbsoluteUriScheme(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return url;
+            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
+                !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return "https://" + url;
+            }
+            return url;
         }
     }
 }
