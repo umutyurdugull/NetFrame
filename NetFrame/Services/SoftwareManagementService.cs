@@ -25,7 +25,7 @@ namespace NetFrame.Services
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<SoftwareInstanceListResponse>(BasePath, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<SoftwareInstanceListResponse>(BasePath, cancellationToken).ConfigureAwait(false);
                 return response?.SwiList ?? new List<SoftwareInstanceSummary>();
             }
             catch (Exception ex)
@@ -38,20 +38,20 @@ namespace NetFrame.Services
         public async Task<SoftwareInstanceDetail> GetSoftwareInstanceAsync(string systemNickname, string swiName, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(systemNickname)}/{Uri.EscapeDataString(swiName)}";
-            return await GetInstanceInternalAsync(endpoint, cancellationToken);
+            return await GetInstanceInternalAsync(endpoint, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<SoftwareInstanceDetail> GetSoftwareInstanceByUuidAsync(string uuid, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(uuid)}";
-            return await GetInstanceInternalAsync(endpoint, cancellationToken);
+            return await GetInstanceInternalAsync(endpoint, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<SoftwareInstanceDetail> GetInstanceInternalAsync(string endpoint, CancellationToken cancellationToken)
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<SoftwareInstanceDetail>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<SoftwareInstanceDetail>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get software instance endpoint.");
             }
             catch (Exception ex)
@@ -65,7 +65,7 @@ namespace NetFrame.Services
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(BasePath, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(BasePath, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -80,7 +80,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(uuid)}";
             try
             {
-                var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -95,7 +95,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(systemNickname)}/{Uri.EscapeDataString(swiName)}";
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -110,9 +110,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(uuid)}/datasets";
             try
             {
-                var response = await _httpClient.PostAsync(endpoint, null, cancellationToken);
+                using var response = await _httpClient.PostAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                var status = await response.Content.ReadFromJsonAsync<AsyncStatusResponse>(cancellationToken: cancellationToken);
+                var status = await response.Content.ReadFromJsonAsync<AsyncStatusResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
                 return status?.StatusUrl ?? throw new InvalidOperationException("Status URL not received.");
             }
             catch (Exception ex)
@@ -126,7 +126,7 @@ namespace NetFrame.Services
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<DatasetListStatusResponse>(statusUrl, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<DatasetListStatusResponse>(statusUrl, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from data set list status endpoint.");
             }
             catch (Exception ex)
@@ -141,9 +141,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(uuid)}/export";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                var status = await response.Content.ReadFromJsonAsync<AsyncStatusResponse>(cancellationToken: cancellationToken);
+                var status = await response.Content.ReadFromJsonAsync<AsyncStatusResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
                 return status?.StatusUrl ?? throw new InvalidOperationException("Status URL not received.");
             }
             catch (Exception ex)
@@ -157,7 +157,7 @@ namespace NetFrame.Services
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<ExportStatusResponse>(statusUrl, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<ExportStatusResponse>(statusUrl, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from export status endpoint.");
             }
             catch (Exception ex)

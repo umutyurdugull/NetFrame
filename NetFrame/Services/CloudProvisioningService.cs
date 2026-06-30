@@ -26,9 +26,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/ip/actions/obtain";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<ObtainIpResponse>(cancellationToken: cancellationToken) ?? new ObtainIpResponse();
+                return await response.Content.ReadFromJsonAsync<ObtainIpResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new ObtainIpResponse();
             }
             catch (Exception ex)
             {
@@ -42,7 +42,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/ip/actions/release";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -57,9 +57,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/port/actions/obtain";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<ObtainPortResponse>(cancellationToken: cancellationToken) ?? new ObtainPortResponse();
+                return await response.Content.ReadFromJsonAsync<ObtainPortResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new ObtainPortResponse();
             }
             catch (Exception ex)
             {
@@ -73,7 +73,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/port/actions/release";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -88,9 +88,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/snaapplname/actions/obtain";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<ObtainSnaResponse>(cancellationToken: cancellationToken) ?? new ObtainSnaResponse();
+                return await response.Content.ReadFromJsonAsync<ObtainSnaResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new ObtainSnaResponse();
             }
             catch (Exception ex)
             {
@@ -104,7 +104,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/snaapplname/actions/release";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -119,9 +119,9 @@ namespace NetFrame.Services
             var endpoint = "/zosmf/resource-mgmt/rest/" + Version + "/rdp/wlm/clrule/actions/add";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<AddClassificationRuleResponse>(cancellationToken: cancellationToken) ?? new AddClassificationRuleResponse();
+                return await response.Content.ReadFromJsonAsync<AddClassificationRuleResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new AddClassificationRuleResponse();
             }
             catch (Exception ex)
             {
@@ -135,7 +135,7 @@ namespace NetFrame.Services
             var endpoint = "/zosmf/resource-mgmt/rest/" + Version + "/rdp/wlm/clrule/actions/remove";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -156,7 +156,7 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<DatasetAttributesResponse>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<DatasetAttributesResponse>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get dataset attributes endpoint.");
             }
             catch (Exception ex)
@@ -171,9 +171,9 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/resource-mgmt/rest/{Version}/rdp/{Uri.EscapeDataString(rdpId)}/lpar/";
             try
             {
-                var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<CreateLparEntryResponse>(cancellationToken: cancellationToken) ?? new CreateLparEntryResponse();
+                return await response.Content.ReadFromJsonAsync<CreateLparEntryResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new CreateLparEntryResponse();
             }
             catch (Exception ex)
             {
@@ -187,7 +187,7 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/resource-mgmt/rest/{Version}/rdp/{Uri.EscapeDataString(rdpId)}/lpar/{Uri.EscapeDataString(lparPoolId)}";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -202,7 +202,7 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/resource-mgmt/rest/{Version}/rdp/{Uri.EscapeDataString(rdpId)}/lpar/{Uri.EscapeDataString(lparPoolId)}";
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -217,7 +217,7 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/resource-mgmt/rest/{Version}/rdp/{Uri.EscapeDataString(rdpId)}/lpar/";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<List<LparEntryDetail>>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<List<LparEntryDetail>>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? new List<LparEntryDetail>();
             }
             catch (Exception ex)
@@ -232,7 +232,7 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/resource-mgmt/rest/{Version}/rdp/{Uri.EscapeDataString(rdpId)}/lpar/{Uri.EscapeDataString(lparPoolId)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<LparEntryDetail>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<LparEntryDetail>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get LPAR entry properties endpoint.");
             }
             catch (Exception ex)
@@ -247,9 +247,9 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/resource-mgmt/rest/{Version}/rdp/lpar/actions/obtain";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<LparEntryDetail>(cancellationToken: cancellationToken) ?? new LparEntryDetail();
+                return await response.Content.ReadFromJsonAsync<LparEntryDetail>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new LparEntryDetail();
             }
             catch (Exception ex)
             {
@@ -263,7 +263,7 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/resource-mgmt/rest/{Version}/rdp/lpar/actions/release";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)

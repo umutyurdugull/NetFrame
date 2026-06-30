@@ -1,25 +1,16 @@
-﻿namespace NetFrame.Models
+namespace NetFrame.Models
 {
     public class WriteContentOptions
     {
         public string? IfMatch { get; set; }
-
-        public string DataType { get; set; } = "text";
-
+        public ZosmfDataType DataType { get; set; } = ZosmfDataType.Text;
         public string ContentType { get; set; } = "text/plain";
-
-        public string MigratedRecall { get; set; } = "wait";
-
-        public string? ObtainEnq { get; set; }
-
+        public MigratedRecallMode MigratedRecall { get; set; } = MigratedRecallMode.Wait;
+        public EnqueueLock ObtainEnq { get; set; } = EnqueueLock.None;
         public string? SessionRef { get; set; }
-
         public bool? ReleaseEnq { get; set; }
-
         public string? DsnameEncoding { get; set; }
-
         public string? TargetSystemUser { get; set; }
-
         public string? TargetSystemPassword { get; set; }
     }
 }

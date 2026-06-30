@@ -27,9 +27,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/ssin";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<SsinListResponse>(cancellationToken: cancellationToken) ?? new SsinListResponse();
+                return await response.Content.ReadFromJsonAsync<SsinListResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new SsinListResponse();
             }
             catch (Exception ex)
             {
@@ -49,7 +49,7 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<SsinListResponse>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<SsinListResponse>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? new SsinListResponse();
             }
             catch (Exception ex)
@@ -64,9 +64,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/ssin/variable-name";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<VariableNameResponse>(cancellationToken: cancellationToken) ?? new VariableNameResponse();
+                return await response.Content.ReadFromJsonAsync<VariableNameResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new VariableNameResponse();
             }
             catch (Exception ex)
             {

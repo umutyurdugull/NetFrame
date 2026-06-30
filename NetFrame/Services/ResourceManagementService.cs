@@ -28,7 +28,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/domains/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<DomainDetail>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<DomainDetail>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get domain endpoint.");
             }
             catch (Exception ex)
@@ -45,7 +45,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/domains/{Uri.EscapeDataString(domainId)}/history";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<DomainHistoryResponse>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<DomainHistoryResponse>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get domain history endpoint.");
             }
             catch (Exception ex)
@@ -60,7 +60,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/domains/";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<DomainListResponse>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<DomainListResponse>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from list domains endpoint.");
             }
             catch (Exception ex)
@@ -78,9 +78,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/domains/{Uri.EscapeDataString(domainId)}/tenants";
             try
             {
-                var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<CreateTenantResponse>(cancellationToken: cancellationToken) ?? new CreateTenantResponse();
+                return await response.Content.ReadFromJsonAsync<CreateTenantResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new CreateTenantResponse();
             }
             catch (Exception ex)
             {
@@ -96,7 +96,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<TenantDetail>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<TenantDetail>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get tenant endpoint.");
             }
             catch (Exception ex)
@@ -113,7 +113,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/history";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<DomainHistoryResponse>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<DomainHistoryResponse>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get tenant history endpoint.");
             }
             catch (Exception ex)
@@ -128,7 +128,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/tenants/";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<TenantListResponse>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<TenantListResponse>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from list tenants endpoint.");
             }
             catch (Exception ex)
@@ -145,7 +145,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}";
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -158,85 +158,85 @@ namespace NetFrame.Services
         public async Task AssignCpuCappingPropertiesAsync(string tenantId, AssignCpuCappingRequest request, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/actions/assign-cpu-capping-properties";
-            await PerformTenantActionAsync(endpoint, request, cancellationToken);
+            await PerformTenantActionAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task AssignMemoryCappingPropertiesAsync(string tenantId, AssignMemoryCappingRequest request, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/actions/assign-memory-capping-properties";
-            await PerformTenantActionAsync(endpoint, request, cancellationToken);
+            await PerformTenantActionAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task AssignSolutionIdAsync(string tenantId, AssignSolutionIdRequest request, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/actions/assign-solution-id";
-            await PerformTenantActionAsync(endpoint, request, cancellationToken);
+            await PerformTenantActionAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task DisableCpuCappingAsync(string tenantId, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/actions/disable-cpu-capping";
-            await PerformTenantActionAsync(endpoint, null, cancellationToken);
+            await PerformTenantActionAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task DisableMemoryCappingAsync(string tenantId, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/actions/disable-memory-capping";
-            await PerformTenantActionAsync(endpoint, null, cancellationToken);
+            await PerformTenantActionAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task DisableMeteringAsync(string tenantId, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/actions/disable-metering";
-            await PerformTenantActionAsync(endpoint, null, cancellationToken);
+            await PerformTenantActionAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task EnableCpuCappingAsync(string tenantId, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/actions/enable-cpu-capping";
-            await PerformTenantActionAsync(endpoint, null, cancellationToken);
+            await PerformTenantActionAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task EnableMemoryCappingAsync(string tenantId, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/actions/enable-memory-capping";
-            await PerformTenantActionAsync(endpoint, null, cancellationToken);
+            await PerformTenantActionAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task EnableMeteringAsync(string tenantId, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/actions/enable-metering";
-            await PerformTenantActionAsync(endpoint, null, cancellationToken);
+            await PerformTenantActionAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task AddTenantConsumersAsync(string tenantId, TenantConsumerActionRequest request, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/consumers/actions/add";
-            await PerformTenantActionAsync(endpoint, request, cancellationToken);
+            await PerformTenantActionAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task RemoveTenantConsumersAsync(string tenantId, TenantConsumerActionRequest request, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/consumers/actions/remove";
-            await PerformTenantActionAsync(endpoint, request, cancellationToken);
+            await PerformTenantActionAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task AddTenantDescriptionAsync(string tenantId, TenantDescriptionActionRequest request, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/description/actions/add";
-            await PerformTenantActionAsync(endpoint, request, cancellationToken);
+            await PerformTenantActionAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task AddTenantGroupsAsync(string tenantId, TenantGroupActionRequest request, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/groups/actions/add";
-            await PerformTenantActionAsync(endpoint, request, cancellationToken);
+            await PerformTenantActionAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task RemoveTenantGroupsAsync(string tenantId, TenantGroupActionRequest request, CancellationToken cancellationToken = default)
         {
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/groups/actions/remove";
-            await PerformTenantActionAsync(endpoint, request, cancellationToken);
+            await PerformTenantActionAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<ResourcePoolDetail> GetResourcePoolAsync(string tenantId, string rdpId, CancellationToken cancellationToken = default)
@@ -244,7 +244,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/tenants/{Uri.EscapeDataString(tenantId)}/rdp/{Uri.EscapeDataString(rdpId)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<ResourcePoolDetail>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<ResourcePoolDetail>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get resource pool endpoint.");
             }
             catch (Exception ex)
@@ -261,11 +261,11 @@ namespace NetFrame.Services
                 HttpResponseMessage response;
                 if (requestBody != null)
                 {
-                    response = await _httpClient.PostAsJsonAsync(endpoint, requestBody, cancellationToken);
+                    response = await _httpClient.PostAsJsonAsync(endpoint, requestBody, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    response = await _httpClient.PostAsync(endpoint, null, cancellationToken);
+                    response = await _httpClient.PostAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
                 }
                 response.EnsureSuccessStatusCode();
             }

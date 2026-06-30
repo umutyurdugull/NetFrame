@@ -26,9 +26,9 @@ namespace NetFrame.Services
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(BasePath, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(BasePath, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<SoftwareInstanceDetail>(cancellationToken: cancellationToken) ?? new SoftwareInstanceDetail();
+                return await response.Content.ReadFromJsonAsync<SoftwareInstanceDetail>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new SoftwareInstanceDetail();
             }
             catch (Exception ex)
             {
@@ -42,7 +42,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<SoftwareInstanceDetail>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<SoftwareInstanceDetail>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get instance endpoint.");
             }
             catch (Exception ex)
@@ -56,7 +56,7 @@ namespace NetFrame.Services
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<InstanceListResponse>(BasePath, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<InstanceListResponse>(BasePath, cancellationToken).ConfigureAwait(false);
                 return response ?? new InstanceListResponse();
             }
             catch (Exception ex)
@@ -71,7 +71,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -86,7 +86,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -101,9 +101,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(objectId)}/actions/{Uri.EscapeDataString(actionName)}";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request ?? new PerformActionRequest(), cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request ?? new PerformActionRequest(), cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<ActionResult>(cancellationToken: cancellationToken) ?? new ActionResult();
+                return await response.Content.ReadFromJsonAsync<ActionResult>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new ActionResult();
             }
             catch (Exception ex)
             {
@@ -117,7 +117,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(objectId)}/actions/{Uri.EscapeDataString(actionId)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<ActionResult>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<ActionResult>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get action response endpoint.");
             }
             catch (Exception ex)
@@ -132,7 +132,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(objectId)}/actions";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<ActionResponseList>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<ActionResponseList>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? new ActionResponseList();
             }
             catch (Exception ex)
@@ -147,7 +147,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(objectId)}/resume-workflow";
             try
             {
-                var response = await _httpClient.PostAsync(endpoint, null, cancellationToken);
+                using var response = await _httpClient.PostAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -162,7 +162,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(objectId)}/retry-workflow";
             try
             {
-                var response = await _httpClient.PostAsync(endpoint, null, cancellationToken);
+                using var response = await _httpClient.PostAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -177,7 +177,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(objectId)}/actions/{Uri.EscapeDataString(actionId)}/resume-workflow";
             try
             {
-                var response = await _httpClient.PostAsync(endpoint, null, cancellationToken);
+                using var response = await _httpClient.PostAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -192,7 +192,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/{Uri.EscapeDataString(objectId)}/actions/{Uri.EscapeDataString(actionId)}/retry-workflow";
             try
             {
-                var response = await _httpClient.PostAsync(endpoint, null, cancellationToken);
+                using var response = await _httpClient.PostAsync(endpoint, null, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -208,7 +208,7 @@ namespace NetFrame.Services
             var body = new { variables };
             try
             {
-                var response = await _httpClient.PutAsJsonAsync(endpoint, body, cancellationToken);
+                using var response = await _httpClient.PutAsJsonAsync(endpoint, body, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)

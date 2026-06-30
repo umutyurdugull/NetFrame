@@ -27,7 +27,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/policies/cfrm";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<CfrmPolicyListResponse>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<CfrmPolicyListResponse>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? new CfrmPolicyListResponse();
             }
             catch (Exception ex)
@@ -44,7 +44,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/policies/cfrm/{Uri.EscapeDataString(policyName)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<CfrmPolicyDetailResponse>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<CfrmPolicyDetailResponse>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException($"Empty response received for CFRM policy: {policyName}");
             }
             catch (Exception ex)

@@ -27,9 +27,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/wrps";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<PrimeWrpResponse>(cancellationToken: cancellationToken) ?? new PrimeWrpResponse();
+                return await response.Content.ReadFromJsonAsync<PrimeWrpResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new PrimeWrpResponse();
             }
             catch (Exception ex)
             {
@@ -45,10 +45,10 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/wrps/{Uri.EscapeDataString(wrpId)}";
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
                 // The documentation shows it returns a JSON body with status, return-code, message
-                return await response.Content.ReadFromJsonAsync<DeleteWrpResponse>(cancellationToken: cancellationToken) ?? new DeleteWrpResponse();
+                return await response.Content.ReadFromJsonAsync<DeleteWrpResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new DeleteWrpResponse();
             }
             catch (Exception ex)
             {
@@ -64,9 +64,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/policy/inspolicy";
             try
             {
-                var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<ConstructPolicyResponse>(cancellationToken: cancellationToken) ?? new ConstructPolicyResponse();
+                return await response.Content.ReadFromJsonAsync<ConstructPolicyResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new ConstructPolicyResponse();
             }
             catch (Exception ex)
             {

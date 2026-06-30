@@ -28,9 +28,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/workflows";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<CreateWorkflowResponse>(cancellationToken: cancellationToken) ?? new CreateWorkflowResponse();
+                return await response.Content.ReadFromJsonAsync<CreateWorkflowResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new CreateWorkflowResponse();
             }
             catch (Exception ex)
             {
@@ -51,9 +51,9 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<WorkflowProperties>(cancellationToken: cancellationToken) ?? new WorkflowProperties();
+                return await response.Content.ReadFromJsonAsync<WorkflowProperties>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new WorkflowProperties();
             }
             catch (Exception ex)
             {
@@ -77,9 +77,9 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<ListWorkflowsResponse>(cancellationToken: cancellationToken) ?? new ListWorkflowsResponse();
+                return await response.Content.ReadFromJsonAsync<ListWorkflowsResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new ListWorkflowsResponse();
             }
             catch (Exception ex)
             {
@@ -97,7 +97,7 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PutAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -115,9 +115,9 @@ namespace NetFrame.Services
             
             try
             {
-                var response = await _httpClient.PutAsJsonAsync(endpoint, new { }, cancellationToken);
+                using var response = await _httpClient.PutAsJsonAsync(endpoint, new { }, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<CancelWorkflowResponse>(cancellationToken: cancellationToken) ?? new CancelWorkflowResponse();
+                return await response.Content.ReadFromJsonAsync<CancelWorkflowResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new CancelWorkflowResponse();
             }
             catch (Exception ex)
             {
@@ -134,7 +134,7 @@ namespace NetFrame.Services
             
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -156,9 +156,9 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync(cancellationToken);
+                return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -175,9 +175,9 @@ namespace NetFrame.Services
             
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, new { }, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, new { }, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<ArchiveWorkflowResponse>(cancellationToken: cancellationToken) ?? new ArchiveWorkflowResponse();
+                return await response.Content.ReadFromJsonAsync<ArchiveWorkflowResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new ArchiveWorkflowResponse();
             }
             catch (Exception ex)
             {
@@ -200,9 +200,9 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<ListArchivedWorkflowsResponse>(cancellationToken: cancellationToken) ?? new ListArchivedWorkflowsResponse();
+                return await response.Content.ReadFromJsonAsync<ListArchivedWorkflowsResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new ListArchivedWorkflowsResponse();
             }
             catch (Exception ex)
             {
@@ -223,9 +223,9 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<WorkflowProperties>(cancellationToken: cancellationToken) ?? new WorkflowProperties();
+                return await response.Content.ReadFromJsonAsync<WorkflowProperties>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new WorkflowProperties();
             }
             catch (Exception ex)
             {
@@ -242,7 +242,7 @@ namespace NetFrame.Services
             
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)

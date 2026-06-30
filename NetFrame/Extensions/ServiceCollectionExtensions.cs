@@ -1,10 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NetFrame.Models;
 using NetFrame.Services;
 using System;
-using System.Net.Http.Headers;
-using System.Text;
+using System.Net.Http;
 
 namespace NetFrame.Extensions
 {
@@ -14,249 +15,117 @@ namespace NetFrame.Extensions
         {
             services.Configure(configureOptions);
 
-            services.AddHttpClient<IDatasetService, DatasetService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
+            // Register delegating handlers
+            services.AddTransient<ZosmfAuthHandler>();
+            services.AddTransient<ZosmfHeaderHandler>();
+            services.AddTransient<ZosmfErrorHandler>();
 
-            services.AddHttpClient<IJobService, JobService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
+            // Register Db2 Token cache
+            services.AddSingleton<IDb2TokenStore, Db2TokenStore>();
 
-            services.AddHttpClient<ISystemService, SystemService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
+            // Register all services using the generic helper
+            services.AddZosmfServiceClient<IDatasetService, DatasetService>();
+            services.AddZosmfServiceClient<IJobService, JobService>();
+            services.AddZosmfServiceClient<ISystemService, SystemService>();
+            services.AddZosmfServiceClient<IAppLinkingService, AppLinkingService>();
+            services.AddZosmfServiceClient<IExternalGatewayService, ExternalGatewayService>();
+            services.AddZosmfServiceClient<ICloudProvisioningService, CloudProvisioningService>();
+            services.AddZosmfServiceClient<IResourceManagementService, ResourceManagementService>();
+            services.AddZosmfServiceClient<ISoftwareTemplateService, SoftwareTemplateService>();
+            services.AddZosmfServiceClient<ISoftwareInstanceService, SoftwareInstanceService>();
+            services.AddZosmfServiceClient<ISsinService, SsinService>();
+            services.AddZosmfServiceClient<ISoftwareManagementService, SoftwareManagementService>();
+            services.AddZosmfServiceClient<IStorageManagementService, StorageManagementService>();
+            services.AddZosmfServiceClient<ISysplexManagementService, SysplexManagementService>();
+            services.AddZosmfServiceClient<IWlmResourcePoolingService, WlmResourcePoolingService>();
+            services.AddZosmfServiceClient<IManagementServicesCatalogService, ManagementServicesCatalogService>();
+            services.AddZosmfServiceClient<IWorkflowService, WorkflowService>();
+            services.AddZosmfServiceClient<ITsoService, TsoService>();
+            services.AddZosmfServiceClient<IUSSSService, USSService>();
+            services.AddZosmfServiceClient<IConsoleService, ConsoleService>();
+            services.AddZosmfServiceClient<IRmfMeteringService, RmfMeteringService>();
 
-            services.AddHttpClient<IAppLinkingService, AppLinkingService>((sp, client) =>
+            // Register Db2 REST service configuration & service separately as it has dynamic connection rules
+            services.AddHttpClient<IDb2RestService, Db2RestService>((sp, client) =>
             {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
+                var config = sp.GetRequiredService<IOptions<Db2Config>>().Value;
+                if (!string.IsNullOrWhiteSpace(config.BaseUrl))
+                {
+                    client.BaseAddress = new Uri(config.BaseUrl);
+                }
             })
             .ConfigurePrimaryHttpMessageHandler(sp =>
             {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<IExternalGatewayService, ExternalGatewayService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<ICloudProvisioningService, CloudProvisioningService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<IResourceManagementService, ResourceManagementService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<ISoftwareTemplateService, SoftwareTemplateService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<ISoftwareInstanceService, SoftwareInstanceService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<ISsinService, SsinService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<ISoftwareManagementService, SoftwareManagementService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<IStorageManagementService, StorageManagementService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<ISysplexManagementService, SysplexManagementService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<IWlmResourcePoolingService, WlmResourcePoolingService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<IManagementServicesCatalogService, ManagementServicesCatalogService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<IWorkflowService, WorkflowService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<ITsoService, TsoService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<IUSSSService, USSService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<IConsoleService, ConsoleService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
-            });
-
-            services.AddHttpClient<IRmfMeteringService, RmfMeteringService>((sp, client) =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                ConfigureHttpClient(client, config);
-            })
-            .ConfigurePrimaryHttpMessageHandler(sp =>
-            {
-                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
-                return CreateHandler(config);
+                var config = sp.GetRequiredService<IOptions<Db2Config>>().Value;
+                var handler = new HttpClientHandler();
+                if (config.AllowInsecureConnections)
+                {
+                    handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                }
+                return handler;
             });
 
             return services;
         }
 
-        private static void ConfigureHttpClient(HttpClient client, ZosmfConfig config)
+        private static IHttpClientBuilder AddZosmfServiceClient<TInterface, TImplementation>(this IServiceCollection services)
+            where TInterface : class
+            where TImplementation : class, TInterface
         {
-            if (string.IsNullOrWhiteSpace(config.BaseUrl))
+            var builder = services.AddHttpClient<TInterface, TImplementation>((sp, client) =>
             {
-                throw new InvalidOperationException("ZosmfConfig.BaseUrl is required.");
-            }
+                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
+                if (string.IsNullOrWhiteSpace(config.BaseUrl))
+                {
+                    throw new InvalidOperationException("ZosmfConfig.BaseUrl is required.");
+                }
 
-            client.BaseAddress = new Uri(config.BaseUrl);
-            
-            var authInfo = $"{config.Username}:{config.Password}";
-            var byteArray = Encoding.ASCII.GetBytes(authInfo);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                client.BaseAddress = new Uri(config.BaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(config.TimeoutSeconds);
+            })
+            .AddHttpMessageHandler<ZosmfAuthHandler>()
+            .AddHttpMessageHandler<ZosmfHeaderHandler>()
+            .AddHttpMessageHandler<ZosmfErrorHandler>()
+            .ConfigurePrimaryHttpMessageHandler(sp =>
+            {
+                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
+                return CreateHandler(config, sp.GetRequiredService<ILogger<HttpClientHandler>>());
+            });
+
+            builder.AddStandardResilienceHandler();
+
+            return builder;
         }
 
-        private static HttpClientHandler CreateHandler(ZosmfConfig config)
+        private static HttpClientHandler CreateHandler(ZosmfConfig config, ILogger logger)
         {
             var handler = new HttpClientHandler();
             if (config.AllowInsecureConnections)
             {
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) =>
+                {
+                    if (errors == System.Net.Security.SslPolicyErrors.None)
+                    {
+                        return true;
+                    }
+
+                    if (!string.IsNullOrEmpty(config.TrustedCertificateThumbprint))
+                    {
+                        if (cert == null) return false;
+                        string thumbprint = cert.Thumbprint.Replace(":", "").Replace(" ", "").ToUpper();
+                        string configThumbprint = config.TrustedCertificateThumbprint.Replace(":", "").Replace(" ", "").ToUpper();
+                        if (thumbprint == configThumbprint)
+                        {
+                            return true;
+                        }
+
+                        logger.LogWarning("TLS validation failed. Thumbprint '{Thumbprint}' did not match expected config value '{Expected}'. Rejecting connection.", thumbprint, configThumbprint);
+                        return false;
+                    }
+
+                    logger.LogWarning("Insecure TLS bypass active. Acceptable certificate validation failed for: {Subject}", cert?.Subject);
+                    return true;
+                };
             }
             return handler;
         }

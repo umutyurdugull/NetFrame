@@ -24,10 +24,10 @@ namespace NetFrame.Services
                 using var request = new HttpRequestMessage(HttpMethod.Get, "/zosmf/izur/rest/meterdata");
                 request.Headers.Add("X-CSRF-ZOSMF-HEADER", "zosmf");
 
-                var response = await _httpClient.SendAsync(request, cancellationToken);
+                using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
 
-                return await response.Content.ReadAsStringAsync(cancellationToken) ?? string.Empty;
+                return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false) ?? string.Empty;
             }
             catch (Exception ex)
             {

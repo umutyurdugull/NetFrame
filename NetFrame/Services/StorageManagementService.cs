@@ -34,7 +34,7 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<List<StorageGroupSummary>>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<List<StorageGroupSummary>>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? new List<StorageGroupSummary>();
             }
             catch (Exception ex)
@@ -55,7 +55,7 @@ namespace NetFrame.Services
             try
             {
                 // The API returns an array even for a single item according to documentation examples
-                var response = await _httpClient.GetFromJsonAsync<List<StorageGroupDetail>>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<List<StorageGroupDetail>>(endpoint, cancellationToken).ConfigureAwait(false);
                 if (response != null && response.Count > 0)
                 {
                     return response[0];
@@ -82,7 +82,7 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<List<VolumeSummary>>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<List<VolumeSummary>>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? new List<VolumeSummary>();
             }
             catch (Exception ex)
@@ -97,7 +97,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/volumes/{Uri.EscapeDataString(volumeSer)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<List<VolumeSummary>>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<List<VolumeSummary>>(endpoint, cancellationToken).ConfigureAwait(false);
                 if (response != null && response.Count > 0)
                 {
                     return response[0];
@@ -124,7 +124,7 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<List<DataClassSummary>>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<List<DataClassSummary>>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? new List<DataClassSummary>();
             }
             catch (Exception ex)

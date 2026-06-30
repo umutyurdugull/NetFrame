@@ -1,12 +1,9 @@
-using Microsoft.Extensions.Logging;
 using NetFrame.Models;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,13 +11,12 @@ namespace NetFrame.Services
 {
     public class DatasetService : IDatasetService
     {
+        private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(false);
         private readonly HttpClient _httpClient;
-        private readonly ILogger<DatasetService> _logger;
 
-        public DatasetService(HttpClient httpClient, ILogger<DatasetService> logger)
+        public DatasetService(HttpClient httpClient)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<List<string>> ListDatasetsAsync(string dsLevel, CancellationToken cancellationToken = default)
@@ -30,35 +26,23 @@ namespace NetFrame.Services
                 throw new ArgumentException("Dataset level cannot be empty.", nameof(dsLevel));
             }
 
-            var datasetNames = new List<string>();
             var endpoint = $"/zosmf/restfiles/ds?dslevel={Uri.EscapeDataString(dsLevel)}";
-
-            try
+            var response = await _httpClient.GetFromJsonAsync<DatasetListResponse>(endpoint, cancellationToken).ConfigureAwait(false);
+            
+            var datasetNames = new List<string>();
+            if (response?.Items != null)
             {
-                var response = await _httpClient.GetFromJsonAsync<JsonNode>(endpoint, cancellationToken);
-
-                if (response?["items"] is JsonArray itemsArray)
+                foreach (var item in response.Items)
                 {
-                    foreach (var item in itemsArray)
+                    if (!string.IsNullOrEmpty(item.DsName))
                     {
-                        string? name = item?["dsname"]?.ToString();
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            datasetNames.Add(name);
-                        }
+                        datasetNames.Add(item.DsName);
                     }
                 }
+            }
 
-                return datasetNames;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error listing datasets for level: {DsLevel}", dsLevel);
-                throw;
-            }
+            return datasetNames;
         }
-
-
 
         public async Task CreateDatasetAsync(
             string datasetName,
@@ -68,21 +52,20 @@ namespace NetFrame.Services
         {
             if (string.IsNullOrWhiteSpace(datasetName))
             {
-                throw new ArgumentException("dataset name cannot be empty", nameof(datasetName));
+                throw new ArgumentException("Dataset name cannot be empty.", nameof(datasetName));
             }
 
             if (requestBody == null)
             {
-                throw new ArgumentNullException(nameof(requestBody), "request body cannot be null when creating a dataset.");
+                throw new ArgumentNullException(nameof(requestBody), "Request body cannot be null.");
             }
 
             options ??= new CreateDatasetOptions();
-
             var endpoint = $"/zosmf/restfiles/ds/{Uri.EscapeDataString(datasetName)}";
 
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
-
             request.Content = JsonContent.Create(requestBody);
+
             if (!string.IsNullOrEmpty(options.TargetSystem))
             {
                 request.Headers.Add("X-IBM-Target-System", options.TargetSystem);
@@ -94,20 +77,14 @@ namespace NetFrame.Services
                 request.Headers.Add("X-IBM-Target-System-Password", options.TargetSystemPassword);
             }
 
-            try
-            {
-                var response = await _httpClient.SendAsync(request, cancellationToken);
-
-                response.EnsureSuccessStatusCode();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "error creating dataset: {DatasetName}", datasetName);
-                throw;
-            }
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
         }
 
-        public async Task<DatasetMemberResponse> ListDatasetMembersAsync(string datasetName, ListMembersOptions? options = null, CancellationToken cancellationToken = default)
+        public async Task<DatasetMemberResponse> ListDatasetMembersAsync(
+            string datasetName,
+            ListMembersOptions? options = null,
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(datasetName))
             {
@@ -116,7 +93,7 @@ namespace NetFrame.Services
 
             options ??= new ListMembersOptions();
 
-            var queryParams = new List<string>();
+            var queryParams = new List<string>(2);
             if (!string.IsNullOrEmpty(options.Start)) queryParams.Add($"start={Uri.EscapeDataString(options.Start)}");
             if (!string.IsNullOrEmpty(options.Pattern)) queryParams.Add($"pattern={Uri.EscapeDataString(options.Pattern)}");
 
@@ -137,25 +114,16 @@ namespace NetFrame.Services
             }
             request.Headers.Add("X-IBM-Attributes", attributes);
 
-
             if (!string.IsNullOrEmpty(options.MigratedRecall))
             {
                 request.Headers.Add("X-IBM-Migrated-Recall", options.MigratedRecall);
             }
 
-            try
-            {
-                var response = await _httpClient.SendAsync(request, cancellationToken);
-                response.EnsureSuccessStatusCode();
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
 
-                var result = await response.Content.ReadFromJsonAsync<DatasetMemberResponse>(cancellationToken: cancellationToken);
-                return result ?? new DatasetMemberResponse();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error listing members for dataset: {DatasetName}", datasetName);
-                throw;
-            }
+            var result = await response.Content.ReadFromJsonAsync<DatasetMemberResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
+            return result ?? new DatasetMemberResponse();
         }
 
         public async Task<string?> RetrieveDatasetContentAsync(
@@ -166,24 +134,23 @@ namespace NetFrame.Services
         {
             if (string.IsNullOrWhiteSpace(datasetName))
             {
-                throw new ArgumentException("dataset name cannot be empty", nameof(datasetName));
+                throw new ArgumentException("Dataset name cannot be empty.", nameof(datasetName));
             }
 
             options ??= new RetrieveContentOptions();
 
             if (!string.IsNullOrEmpty(options.Search) && !string.IsNullOrEmpty(options.Research))
             {
-                throw new ArgumentException("search and research parameters cannot be specified together");
+                throw new ArgumentException("Search and research parameters cannot be specified together.");
             }
 
             var endpointBuilder = new StringBuilder($"/zosmf/restfiles/ds/{Uri.EscapeDataString(datasetName)}");
-
             if (!string.IsNullOrWhiteSpace(memberName))
             {
                 endpointBuilder.Append($"({Uri.EscapeDataString(memberName)})");
             }
 
-            var queryParams = new List<string>();
+            var queryParams = new List<string>(4);
             if (!string.IsNullOrEmpty(options.Search))
                 queryParams.Add($"search={Uri.EscapeDataString(options.Search)}");
 
@@ -201,38 +168,30 @@ namespace NetFrame.Services
                 endpointBuilder.Append("?").Append(string.Join("&", queryParams));
             }
 
-
-            //Ronin'in bahsettiği sistemin .Net hali var mı ona bakılacak 
             using var request = new HttpRequestMessage(HttpMethod.Get, endpointBuilder.ToString());
             if (!string.IsNullOrEmpty(options.IfNoneMatch) && string.IsNullOrEmpty(options.RecordRange))
             {
                 request.Headers.Add("If-None-Match", options.IfNoneMatch);
             }
 
-
-            if (!string.IsNullOrEmpty(options.DataType))
-            {
-                request.Headers.Add("X-IBM-Data-Type", options.DataType);
-            }
+            request.Headers.Add("X-IBM-Data-Type", MapDataType(options.DataType));
 
             if (options.ReturnEtag.HasValue && options.ReturnEtag.Value && string.IsNullOrEmpty(options.RecordRange))
             {
                 request.Headers.Add("X-IBM-Return-Etag", "true");
             }
 
-            if (!string.IsNullOrEmpty(options.MigratedRecall))
-            {
-                request.Headers.Add("X-IBM-Migrated-Recall", options.MigratedRecall);
-            }
+            request.Headers.Add("X-IBM-Migrated-Recall", MapMigratedRecall(options.MigratedRecall));
 
             if (!string.IsNullOrEmpty(options.RecordRange))
             {
                 request.Headers.Add("X-IBM-Record-Range", options.RecordRange);
             }
 
-            if (!string.IsNullOrEmpty(options.ObtainEnq))
+            var enqHeader = MapEnqueueLock(options.ObtainEnq);
+            if (!string.IsNullOrEmpty(enqHeader))
             {
-                request.Headers.Add("X-IBM-Obtain-ENQ", options.ObtainEnq);
+                request.Headers.Add("X-IBM-Obtain-ENQ", enqHeader);
             }
 
             if (!string.IsNullOrEmpty(options.SessionRef))
@@ -250,41 +209,22 @@ namespace NetFrame.Services
                 request.Headers.Add("X-IBM-Dsname-Encoding", options.DsnameEncoding);
             }
 
-
             if (!string.IsNullOrEmpty(options.TargetSystemUser) && !string.IsNullOrEmpty(options.TargetSystemPassword))
             {
                 request.Headers.Add("X-IBM-Target-System-User", options.TargetSystemUser);
                 request.Headers.Add("X-IBM-Target-System-Password", options.TargetSystemPassword);
             }
 
-            try
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotModified)
             {
-                var response = await _httpClient.SendAsync(request, cancellationToken);
-
-                if (response.StatusCode == System.Net.HttpStatusCode.NotModified)
-                {
-                    return null;
-                }
-
-                response.EnsureSuccessStatusCode();
-
-                return await response.Content.ReadAsStringAsync(cancellationToken);
+                return null;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving content for dataset: {DatasetName}", datasetName);
-                throw;
-            }
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        //COBOL dosyasının içine string'den gelen kodu yazdırmak istiyorum mesela? 
-        /*
-                IDENTIFICATION DIVISION.
-       PROGRAM-ID. HELLO.
-       PROCEDURE DIVISION.
-           DISPLAY 'HELLO TURKEY!'.
-           GOBACK.
-            */
         public async Task<string> WriteDatasetContentAsync(
             string datasetName,
             string? memberName = null,
@@ -295,8 +235,9 @@ namespace NetFrame.Services
         {
             if (string.IsNullOrWhiteSpace(datasetName))
             {
-                throw new ArgumentException("Dataset name cannot be empty", nameof(datasetName));
+                throw new ArgumentException("Dataset name cannot be empty.", nameof(datasetName));
             }
+
             options ??= new WriteContentOptions();
             var endpointBuilder = new StringBuilder("/zosmf/restfiles/ds/");
             if (!string.IsNullOrWhiteSpace(volser))
@@ -310,31 +251,22 @@ namespace NetFrame.Services
             {
                 endpointBuilder.Append($"({Uri.EscapeDataString(memberName)})");
             }
+
             using var request = new HttpRequestMessage(HttpMethod.Put, endpointBuilder.ToString());
-            var encoding = new UTF8Encoding(false); // hata atiyo mainframe'de 
-            request.Content = new StringContent(content ?? string.Empty, encoding, options.ContentType);
+            request.Content = new StringContent(content ?? string.Empty, Utf8NoBom, options.ContentType);
+
             if (!string.IsNullOrEmpty(options.IfMatch))
             {
                 request.Headers.TryAddWithoutValidation("If-Match", options.IfMatch);
             }
 
+            request.Headers.Add("X-IBM-Data-Type", MapDataType(options.DataType));
+            request.Headers.Add("X-IBM-Migrated-Recall", MapMigratedRecall(options.MigratedRecall));
 
-
-            //ibm headers 
-
-            if (!string.IsNullOrEmpty(options.DataType))
+            var enqHeader = MapEnqueueLock(options.ObtainEnq);
+            if (!string.IsNullOrEmpty(enqHeader))
             {
-                request.Headers.Add("X-IBM-Data-Type", options.DataType);
-            }
-
-            if (!string.IsNullOrEmpty(options.MigratedRecall))
-            {
-                request.Headers.Add("X-IBM-Migrated-Recall", options.MigratedRecall);
-            }
-
-            if (!string.IsNullOrEmpty(options.ObtainEnq))
-            {
-                request.Headers.Add("X-IBM-Obtain-ENQ", options.ObtainEnq);
+                request.Headers.Add("X-IBM-Obtain-ENQ", enqHeader);
             }
 
             if (!string.IsNullOrEmpty(options.SessionRef))
@@ -358,25 +290,27 @@ namespace NetFrame.Services
                 request.Headers.Add("X-IBM-Target-System-Password", options.TargetSystemPassword);
             }
 
-
-            try
-            {
-
-                var response = await _httpClient.SendAsync(request, cancellationToken);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync(cancellationToken) ?? string.Empty;
-
-
-            }
-
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "error writing content to dataset: {DatasetName}", datasetName);
-                throw;
-            }
-
-
-
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false) ?? string.Empty;
         }
+
+        private static string MapDataType(ZosmfDataType type) => type == ZosmfDataType.Binary ? "binary" : "text";
+
+        private static string MapMigratedRecall(MigratedRecallMode mode) => mode switch
+        {
+            MigratedRecallMode.NoWait => "nowait",
+            MigratedRecallMode.Error => "error",
+            _ => "wait"
+        };
+
+        private static string? MapEnqueueLock(EnqueueLock lockMode) => lockMode switch
+        {
+            EnqueueLock.Shared => "shr",
+            EnqueueLock.Exclusive => "excl",
+            EnqueueLock.SharedUpdate => "shru",
+            EnqueueLock.ExclusiveUpdate => "exclu",
+            _ => null
+        };
     }
 }

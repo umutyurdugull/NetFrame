@@ -27,9 +27,9 @@ namespace NetFrame.Services
             const string endpoint = "/zosmf/izual/rest/eventtype";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<AppLinkingResponse<object>>(cancellationToken: cancellationToken) ?? new AppLinkingResponse<object>();
+                return await response.Content.ReadFromJsonAsync<AppLinkingResponse<object>>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new AppLinkingResponse<object>();
             }
             catch (Exception ex)
             {
@@ -46,9 +46,9 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/izual/rest/handler?eventTypeId={Uri.EscapeDataString(eventTypeId)}";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<AppLinkingResponse<object>>(cancellationToken: cancellationToken) ?? new AppLinkingResponse<object>();
+                return await response.Content.ReadFromJsonAsync<AppLinkingResponse<object>>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new AppLinkingResponse<object>();
             }
             catch (Exception ex)
             {
@@ -64,7 +64,7 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/izual/rest/adm/getHandlerEligibleTasks?eventTypeId={Uri.EscapeDataString(eventTypeId)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<AppLinkingResponse<EligibleTasksResult>>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<AppLinkingResponse<EligibleTasksResult>>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get eligible tasks endpoint.");
             }
             catch (Exception ex)
@@ -81,7 +81,7 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/izual/rest/handler?eventTypeId={Uri.EscapeDataString(eventTypeId)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<AppLinkingResponse<List<HandlerDetail>>>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<AppLinkingResponse<List<HandlerDetail>>>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from list handlers endpoint.");
             }
             catch (Exception ex)
@@ -99,7 +99,7 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/izual/rest/handler/{Uri.EscapeDataString(handlerId)}?eventTypeId={Uri.EscapeDataString(eventTypeId)}";
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -116,7 +116,7 @@ namespace NetFrame.Services
             var endpoint = $"/zosmf/izual/rest/eventtype/{Uri.EscapeDataString(eventTypeId)}";
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)

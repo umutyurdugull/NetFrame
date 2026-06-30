@@ -12,13 +12,12 @@ namespace NetFrame.Services
 {
     public class USSService : IUSSSService
     {
+        private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(false);
         private readonly HttpClient _httpClient;
-        private readonly ILogger<USSService> _logger;
 
-        public USSService(HttpClient httpClient, ILogger<USSService> logger)
+        public USSService(HttpClient httpClient)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<List<UssItem>> ListDirectoryAsync(string path, int? depth = null, int? limit = null, CancellationToken cancellationToken = default)
@@ -32,22 +31,12 @@ namespace NetFrame.Services
             if (depth.HasValue) url += $"&depth={depth.Value}";
             if (limit.HasValue) url += $"&limit={limit.Value}";
 
-            try
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Add("X-CSRF-ZOSMF-HEADER", "zosmf");
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
 
-                var response = await _httpClient.SendAsync(request, cancellationToken);
-                response.EnsureSuccessStatusCode();
-
-                var dirRes = await response.Content.ReadFromJsonAsync<UssDirectoryResponse>(cancellationToken: cancellationToken);
-                return dirRes?.Items ?? new List<UssItem>();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error listing USS directory: {Path}", path);
-                throw;
-            }
+            var dirRes = await response.Content.ReadFromJsonAsync<UssDirectoryResponse>(cancellationToken: cancellationToken).ConfigureAwait(false);
+            return dirRes?.Items ?? new List<UssItem>();
         }
 
         public async Task<string> GetFileContentAsync(string path, CancellationToken cancellationToken = default)
@@ -59,22 +48,13 @@ namespace NetFrame.Services
 
             var url = $"/zosmf/restfiles/fs?path={Uri.EscapeDataString(path)}";
 
-            try
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Add("X-CSRF-ZOSMF-HEADER", "zosmf");
-                request.Headers.Add("X-IBM-Data-Type", "text");
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("X-IBM-Data-Type", "text");
 
-                var response = await _httpClient.SendAsync(request, cancellationToken);
-                response.EnsureSuccessStatusCode();
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
 
-                return await response.Content.ReadAsStringAsync(cancellationToken) ?? string.Empty;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting USS file content: {Path}", path);
-                throw;
-            }
+            return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false) ?? string.Empty;
         }
 
         public async Task WriteFileContentAsync(string path, string content, bool isBinary = false, CancellationToken cancellationToken = default)
@@ -86,23 +66,12 @@ namespace NetFrame.Services
 
             var url = $"/zosmf/restfiles/fs?path={Uri.EscapeDataString(path)}";
 
-            try
-            {
-                using var request = new HttpRequestMessage(HttpMethod.Put, url);
-                request.Headers.Add("X-CSRF-ZOSMF-HEADER", "zosmf");
-                request.Headers.Add("X-IBM-Data-Type", isBinary ? "binary" : "text");
+            using var request = new HttpRequestMessage(HttpMethod.Put, url);
+            request.Headers.Add("X-IBM-Data-Type", isBinary ? "binary" : "text");
+            request.Content = new StringContent(content ?? string.Empty, Utf8NoBom, "text/plain");
 
-                var encoding = new UTF8Encoding(false);
-                request.Content = new StringContent(content ?? string.Empty, encoding, "text/plain");
-
-                var response = await _httpClient.SendAsync(request, cancellationToken);
-                response.EnsureSuccessStatusCode();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error writing USS file content: {Path}", path);
-                throw;
-            }
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
         }
 
         public async Task DeleteFileAsync(string path, bool recursive = false, CancellationToken cancellationToken = default)
@@ -114,23 +83,14 @@ namespace NetFrame.Services
 
             var url = $"/zosmf/restfiles/fs?path={Uri.EscapeDataString(path)}";
 
-            try
+            using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+            if (recursive)
             {
-                using var request = new HttpRequestMessage(HttpMethod.Delete, url);
-                request.Headers.Add("X-CSRF-ZOSMF-HEADER", "zosmf");
-                if (recursive)
-                {
-                    request.Headers.Add("X-IBM-Option", "recursive");
-                }
+                request.Headers.Add("X-IBM-Option", "recursive");
+            }
 
-                var response = await _httpClient.SendAsync(request, cancellationToken);
-                response.EnsureSuccessStatusCode();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting USS file/directory: {Path}", path);
-                throw;
-            }
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
         }
     }
 }

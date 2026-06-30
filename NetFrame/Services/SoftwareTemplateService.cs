@@ -29,9 +29,9 @@ namespace NetFrame.Services
         {
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(SccPath, requestBody, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(SccPath, requestBody, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<SoftwareTemplateDetail>(cancellationToken: cancellationToken) ?? new SoftwareTemplateDetail();
+                return await response.Content.ReadFromJsonAsync<SoftwareTemplateDetail>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new SoftwareTemplateDetail();
             }
             catch (Exception ex)
             {
@@ -45,7 +45,7 @@ namespace NetFrame.Services
             var endpoint = $"{SccPath}/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<SoftwareTemplateDetail>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<SoftwareTemplateDetail>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get template endpoint.");
             }
             catch (Exception ex)
@@ -59,7 +59,7 @@ namespace NetFrame.Services
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<TemplateListResponse>(SccPath, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<TemplateListResponse>(SccPath, cancellationToken).ConfigureAwait(false);
                 return response ?? new TemplateListResponse();
             }
             catch (Exception ex)
@@ -74,7 +74,7 @@ namespace NetFrame.Services
             var endpoint = $"{SccPath}/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -90,7 +90,7 @@ namespace NetFrame.Services
             var body = new { archiveExisting, ignoreTest };
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, body, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, body, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -105,9 +105,9 @@ namespace NetFrame.Services
             var endpoint = $"{SccPath}/{Uri.EscapeDataString(objectId)}/actions/test";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<RunTemplateResponse>(cancellationToken: cancellationToken) ?? new RunTemplateResponse();
+                return await response.Content.ReadFromJsonAsync<RunTemplateResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new RunTemplateResponse();
             }
             catch (Exception ex)
             {
@@ -123,7 +123,7 @@ namespace NetFrame.Services
             var endpoint = $"{PscPath}/{Uri.EscapeDataString(name)}";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<SoftwareTemplateDetail>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<SoftwareTemplateDetail>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from get published template endpoint.");
             }
             catch (Exception ex)
@@ -137,7 +137,7 @@ namespace NetFrame.Services
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<TemplateListResponse>(PscPath, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<TemplateListResponse>(PscPath, cancellationToken).ConfigureAwait(false);
                 return response ?? new TemplateListResponse();
             }
             catch (Exception ex)
@@ -152,9 +152,9 @@ namespace NetFrame.Services
             var endpoint = $"{PscPath}/{Uri.EscapeDataString(name)}/actions/run";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<RunTemplateResponse>(cancellationToken: cancellationToken) ?? new RunTemplateResponse();
+                return await response.Content.ReadFromJsonAsync<RunTemplateResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new RunTemplateResponse();
             }
             catch (Exception ex)
             {
@@ -171,7 +171,7 @@ namespace NetFrame.Services
             var endpoint = $"{basePath}/{Uri.EscapeDataString(objectId)}/prompt-variables";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<Dictionary<string, List<PromptVariable>>>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<Dictionary<string, List<PromptVariable>>>(endpoint, cancellationToken).ConfigureAwait(false);
                 if (response != null && response.TryGetValue("prompt-variables", out var variables))
                 {
                     return variables;
@@ -191,7 +191,7 @@ namespace NetFrame.Services
             var endpoint = $"{basePath}/{Uri.EscapeDataString(objectId)}/history";
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<TemplateHistoryResponse>(endpoint, cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<TemplateHistoryResponse>(endpoint, cancellationToken).ConfigureAwait(false);
                 return response ?? new TemplateHistoryResponse();
             }
             catch (Exception ex)

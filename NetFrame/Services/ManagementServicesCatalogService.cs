@@ -33,12 +33,12 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
                     return new List<CatalogServiceSummary>();
 
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<List<CatalogServiceSummary>>(cancellationToken: cancellationToken) ?? new List<CatalogServiceSummary>();
+                return await response.Content.ReadFromJsonAsync<List<CatalogServiceSummary>>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new List<CatalogServiceSummary>();
             }
             catch (Exception ex)
             {
@@ -54,9 +54,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/catalog-services/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync(cancellationToken);
+                return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -70,12 +70,12 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/categories";
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
                     return new List<Category>();
 
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<List<Category>>(cancellationToken: cancellationToken) ?? new List<Category>();
+                return await response.Content.ReadFromJsonAsync<List<Category>>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new List<Category>();
             }
             catch (Exception ex)
             {
@@ -91,9 +91,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/categories/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<Category>(cancellationToken: cancellationToken) ?? new Category();
+                return await response.Content.ReadFromJsonAsync<Category>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new Category();
             }
             catch (Exception ex)
             {
@@ -116,12 +116,12 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
                     return new List<ServiceSubmissionSummary>();
 
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<List<ServiceSubmissionSummary>>(cancellationToken: cancellationToken) ?? new List<ServiceSubmissionSummary>();
+                return await response.Content.ReadFromJsonAsync<List<ServiceSubmissionSummary>>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new List<ServiceSubmissionSummary>();
             }
             catch (Exception ex)
             {
@@ -137,9 +137,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/service-instances/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync(cancellationToken);
+                return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -155,9 +155,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/service-instances";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync(cancellationToken);
+                return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -173,7 +173,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/service-instances/{Uri.EscapeDataString(objectId)}";
             try
             {
-                var response = await _httpClient.DeleteAsync(endpoint, cancellationToken);
+                using var response = await _httpClient.DeleteAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -196,7 +196,7 @@ namespace NetFrame.Services
                     Content = JsonContent.Create(request)
                 };
 
-                var response = await _httpClient.SendAsync(reqMsg, cancellationToken);
+                using var response = await _httpClient.SendAsync(reqMsg, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -214,7 +214,7 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/service-instances/{Uri.EscapeDataString(objectId)}/actions/{Uri.EscapeDataString(action)}";
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(endpoint, request ?? new ServiceActionRequest(), cancellationToken);
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, request ?? new ServiceActionRequest(), cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
@@ -229,9 +229,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/settings/job-statements";
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<JobStatementResponse>(cancellationToken: cancellationToken) ?? new JobStatementResponse();
+                return await response.Content.ReadFromJsonAsync<JobStatementResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new JobStatementResponse();
             }
             catch (Exception ex)
             {
@@ -245,9 +245,9 @@ namespace NetFrame.Services
             var endpoint = $"{BasePath}/settings/target-systems";
             try
             {
-                var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+                var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
-                return await response.Content.ReadFromJsonAsync<TargetSystemResponse>(cancellationToken: cancellationToken) ?? new TargetSystemResponse();
+                return await response.Content.ReadFromJsonAsync<TargetSystemResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new TargetSystemResponse();
             }
             catch (Exception ex)
             {

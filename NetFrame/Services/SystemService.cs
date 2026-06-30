@@ -23,7 +23,7 @@ namespace NetFrame.Services
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<ZosmfInfoResponse>("/zosmf/info", cancellationToken);
+                var response = await _httpClient.GetFromJsonAsync<ZosmfInfoResponse>("/zosmf/info", cancellationToken).ConfigureAwait(false);
                 return response ?? throw new InvalidOperationException("Empty response received from z/OSMF info endpoint.");
             }
             catch (Exception ex)

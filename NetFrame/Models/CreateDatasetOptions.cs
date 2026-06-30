@@ -1,4 +1,4 @@
-﻿namespace NetFrame.Models
+namespace NetFrame.Models
 {
     public class CreateDatasetOptions
     {

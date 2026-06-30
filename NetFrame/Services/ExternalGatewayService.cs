@@ -22,22 +22,22 @@ namespace NetFrame.Services
 
         public async Task<ExternalGatewayResponse> GetDataAsync(ExternalGatewayRequest request, CancellationToken cancellationToken = default)
         {
-            return await SendGatewayRequestAsync(HttpMethod.Get, request, cancellationToken);
+            return await SendGatewayRequestAsync(HttpMethod.Get, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<ExternalGatewayResponse> PostDataAsync(ExternalGatewayRequest request, CancellationToken cancellationToken = default)
         {
-            return await SendGatewayRequestAsync(HttpMethod.Post, request, cancellationToken);
+            return await SendGatewayRequestAsync(HttpMethod.Post, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<ExternalGatewayResponse> PutDataAsync(ExternalGatewayRequest request, CancellationToken cancellationToken = default)
         {
-            return await SendGatewayRequestAsync(HttpMethod.Put, request, cancellationToken);
+            return await SendGatewayRequestAsync(HttpMethod.Put, request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<ExternalGatewayResponse> DeleteDataAsync(ExternalGatewayRequest request, CancellationToken cancellationToken = default)
         {
-            return await SendGatewayRequestAsync(HttpMethod.Delete, request, cancellationToken);
+            return await SendGatewayRequestAsync(HttpMethod.Delete, request, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<ExternalGatewayResponse> SendGatewayRequestAsync(HttpMethod method, ExternalGatewayRequest request, CancellationToken cancellationToken)
@@ -63,7 +63,7 @@ namespace NetFrame.Services
 
             try
             {
-                var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+                using var response = await _httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
 
                 // If wrapped is "N", the response might not match ExternalGatewayResponse structure.
@@ -72,14 +72,14 @@ namespace NetFrame.Services
                 {
                     // This is a bit tricky since the response is raw from the target server.
                     // For now, let's just return a minimal response or handle as object.
-                    var rawContent = await response.Content.ReadFromJsonAsync<object>(cancellationToken: cancellationToken);
+                    var rawContent = await response.Content.ReadFromJsonAsync<object>(cancellationToken: cancellationToken).ConfigureAwait(false);
                     return new ExternalGatewayResponse 
                     { 
                         SystemsOutput = new SystemsOutput { SystemOutput = rawContent, ReturnCode = "Ok" } 
                     };
                 }
 
-                return await response.Content.ReadFromJsonAsync<ExternalGatewayResponse>(cancellationToken: cancellationToken) ?? new ExternalGatewayResponse();
+                return await response.Content.ReadFromJsonAsync<ExternalGatewayResponse>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new ExternalGatewayResponse();
             }
             catch (Exception ex)
             {
