@@ -190,6 +190,50 @@ namespace NetFrame.Extensions
                 return CreateHandler(config);
             });
 
+            services.AddHttpClient<ITsoService, TsoService>((sp, client) =>
+            {
+                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
+                ConfigureHttpClient(client, config);
+            })
+            .ConfigurePrimaryHttpMessageHandler(sp =>
+            {
+                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
+                return CreateHandler(config);
+            });
+
+            services.AddHttpClient<IUSSSService, USSService>((sp, client) =>
+            {
+                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
+                ConfigureHttpClient(client, config);
+            })
+            .ConfigurePrimaryHttpMessageHandler(sp =>
+            {
+                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
+                return CreateHandler(config);
+            });
+
+            services.AddHttpClient<IConsoleService, ConsoleService>((sp, client) =>
+            {
+                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
+                ConfigureHttpClient(client, config);
+            })
+            .ConfigurePrimaryHttpMessageHandler(sp =>
+            {
+                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
+                return CreateHandler(config);
+            });
+
+            services.AddHttpClient<IRmfMeteringService, RmfMeteringService>((sp, client) =>
+            {
+                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
+                ConfigureHttpClient(client, config);
+            })
+            .ConfigurePrimaryHttpMessageHandler(sp =>
+            {
+                var config = sp.GetRequiredService<IOptions<ZosmfConfig>>().Value;
+                return CreateHandler(config);
+            });
+
             return services;
         }
 
