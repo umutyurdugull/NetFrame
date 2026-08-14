@@ -1,5 +1,6 @@
-using System.Text.Json.Serialization;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace NetFrame.Models
 {
@@ -12,10 +13,11 @@ namespace NetFrame.Models
         public string? Type { get; set; }
 
         [JsonPropertyName("size")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public long? Size { get; set; }
 
         [JsonPropertyName("mtime")]
-        public long? Mtime { get; set; }
+        public JsonElement? Mtime { get; set; }
 
         [JsonPropertyName("mode")]
         public string? Mode { get; set; }

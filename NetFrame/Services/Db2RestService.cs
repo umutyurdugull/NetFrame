@@ -20,17 +20,20 @@ namespace NetFrame.Services
         private readonly ILogger<Db2RestService> _logger;
         private readonly Db2Config _config;
         private readonly IDb2TokenStore _tokenStore;
+        private readonly IJobService? _jobService;
 
         public Db2RestService(
             HttpClient httpClient, 
             IOptions<Db2Config> config, 
             ILogger<Db2RestService> logger,
-            IDb2TokenStore tokenStore)
+            IDb2TokenStore tokenStore,
+            IJobService? jobService = null)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _config = config?.Value ?? throw new ArgumentNullException(nameof(config));
             _tokenStore = tokenStore ?? throw new ArgumentNullException(nameof(tokenStore));
+            _jobService = jobService;
 
             _httpClient.DefaultRequestHeaders.Accept.Clear();
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -260,6 +263,124 @@ namespace NetFrame.Services
             }
 
             response.EnsureSuccessStatusCode();
+        }
+
+        public async Task<string> ExecuteSqlViaJclAsync(string sqlStatement, string? jobCard = null, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(sqlStatement))
+            {
+                throw new ArgumentException("SQL statement cannot be empty.", nameof(sqlStatement));
+            }
+
+            string defaultJobCard = "//DB2SQL   JOB CLASS=A,MSGCLASS=X,NOTIFY=&SYSUID\n";
+            string jclHeader = string.IsNullOrWhiteSpace(jobCard) ? defaultJobCard : jobCard;
+
+            string formattedSql = sqlStatement.Trim();
+            if (!formattedSql.EndsWith(";"))
+                formattedSql += ";";
+
+            var wrappedSql = new StringBuilder();
+            var tokens = formattedSql.Split(new[] { ' ', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var currentLine = new StringBuilder();
+
+            foreach (var token in tokens)
+            {
+                if (currentLine.Length + token.Length + 1 > 70)
+                {
+                    wrappedSql.AppendLine(currentLine.ToString());
+                    currentLine.Clear();
+                }
+                if (currentLine.Length > 0)
+                    currentLine.Append(' ');
+                currentLine.Append(token);
+            }
+            if (currentLine.Length > 0)
+            {
+                wrappedSql.AppendLine(currentLine.ToString());
+            }
+
+            string jcl = $"{jclHeader}" +
+                         "//STEP1    EXEC PGM=IKJEFT01,DYNAMNBR=20\n" +
+                         "//SYSTSPRT DD SYSOUT=*\n" +
+                         "//SYSTSIN  DD *\n" +
+                         " DSN SYSTEM(DB2P)\n" +
+                         " RUN PROGRAM(DSNTEP2) PLAN(DSNTEP12)\n" +
+                         " END\n" +
+                         "/*\n" +
+                         "//SYSIN    DD *\n" +
+                         $"{wrappedSql}" +
+                         "/*\n";
+
+            if (_jobService != null)
+            {
+                var jobOptions = new JobSubmissionOptions { JclContent = jcl };
+                var statusJson = await _jobService.SubmitJobAndWaitAsync(jobOptions, cancellationToken).ConfigureAwait(false);
+
+                try
+                {
+                    using var doc = JsonDocument.Parse(statusJson);
+                    string? jobName = doc.RootElement.GetProperty("jobname").GetString();
+                    string? jobId = doc.RootElement.GetProperty("jobid").GetString();
+
+                    if (!string.IsNullOrEmpty(jobName) && !string.IsNullOrEmpty(jobId))
+                    {
+                        var spoolFiles = await _jobService.GetJobSpoolFilesAsync(jobName, jobId, cancellationToken).ConfigureAwait(false);
+                        foreach (var sf in spoolFiles)
+                        {
+                            if (sf != null && sf.Id.HasValue && !string.IsNullOrEmpty(sf.DdName) &&
+                                (sf.DdName.Equals("SYSTSPRT", StringComparison.OrdinalIgnoreCase) ||
+                                 sf.DdName.Equals("SYSPRINT", StringComparison.OrdinalIgnoreCase)))
+                            {
+                                return await _jobService.GetSpoolFileContentAsync(jobName, jobId, sf.Id.Value.ToString(), cancellationToken).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    return statusJson;
+                }
+
+                return statusJson;
+            }
+
+            return string.Empty;
+        }
+
+        public async Task<List<Db2TableItem>> ListUserTablesAsync(string creator, string? jobCard = null, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(creator))
+            {
+                throw new ArgumentException("Creator cannot be empty.", nameof(creator));
+            }
+
+            string sql = $"SELECT NAME AS TABLE_NAME, CREATOR, TYPE FROM SYSIBM.SYSTABLES WHERE CREATOR = '{creator.Trim().ToUpper()}';";
+            string output = await ExecuteSqlViaJclAsync(sql, jobCard, cancellationToken).ConfigureAwait(false);
+
+            var tables = new List<Db2TableItem>();
+            if (string.IsNullOrWhiteSpace(output))
+                return tables;
+
+            var lines = output.Split('\n');
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("NAME") || trimmed.StartsWith("-") || trimmed.StartsWith("DSN") || trimmed.StartsWith("PAGE"))
+                    continue;
+
+                var parts = trimmed.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 3)
+                {
+                    tables.Add(new Db2TableItem
+                    {
+                        TableName = parts[0],
+                        Creator = parts[1],
+                        Type = parts[2]
+                    });
+                }
+            }
+
+            return tables;
         }
     }
 }

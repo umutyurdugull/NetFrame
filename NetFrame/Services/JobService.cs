@@ -208,6 +208,21 @@ namespace NetFrame.Services
             return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        public Task<List<ZosJobFile>> GetJobSpoolFilesAsync(string jobName, string jobId, CancellationToken cancellationToken = default)
+        {
+            return ListJobFilesAsync(jobName, jobId, cancellationToken);
+        }
+
+        public Task<string> GetSpoolFileContentAsync(string jobName, string jobId, string fileId, CancellationToken cancellationToken = default)
+        {
+            return GetJobFileRecordsAsync(jobName, jobId, fileId, cancellationToken);
+        }
+
+        public Task<JobFeedback> PurgeJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default)
+        {
+            return DeleteJobAsync(jobName, jobId, version, cancellationToken);
+        }
+
         public async Task<JobFeedback> HoldJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default)
         {
             var endpoint = $"/zosmf/restjobs/jobs/{Uri.EscapeDataString(jobName)}/{Uri.EscapeDataString(jobId)}";

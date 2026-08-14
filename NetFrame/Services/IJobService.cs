@@ -13,6 +13,10 @@ namespace NetFrame.Services
         Task<List<ZosJobFile>> ListJobFilesAsync(string jobName, string jobId, CancellationToken cancellationToken = default);
         Task<string> GetJobFileRecordsAsync(string jobName, string jobId, string fileId, CancellationToken cancellationToken = default);
         
+        Task<List<ZosJobFile>> GetJobSpoolFilesAsync(string jobName, string jobId, CancellationToken cancellationToken = default);
+        Task<string> GetSpoolFileContentAsync(string jobName, string jobId, string fileId, CancellationToken cancellationToken = default);
+        Task<JobFeedback> PurgeJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default);
+
         Task<JobFeedback> HoldJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default);
         Task<JobFeedback> ReleaseJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default);
         Task<JobFeedback> ChangeJobClassAsync(string jobName, string jobId, string newJobClass, string version = "2.0", CancellationToken cancellationToken = default);

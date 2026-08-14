@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -80,6 +81,55 @@ namespace NetFrame.Services
             using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
         }
+
+        public async Task<bool> DeleteDatasetAsync(string datasetName,string? memberName = null,string? volser=null,DeleteDatasetOptions? options = null,CancellationToken cancellationToken = default)
+        { 
+            if (string.IsNullOrWhiteSpace(datasetName))
+            {
+                throw new ArgumentException("Dataset name cannot be empty.", nameof(datasetName));
+            }
+
+            options ??= new DeleteDatasetOptions();
+            var targetPath = string.IsNullOrWhiteSpace(memberName)
+            ? datasetName
+            : $"{datasetName}({memberName})";
+        
+            var endpoint = string.IsNullOrWhiteSpace(volser) && string.IsNullOrWhiteSpace(options.Volser)
+            ? $"/zosmf/restfiles/ds/{Uri.EscapeDataString(targetPath)}"
+            : $"/zosmf/restfiles/ds/-({volser ?? options.Volser})/{Uri.EscapeDataString(targetPath)}";
+
+            using var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+            request.Headers.Add("X-IBM-Option", "delete");
+
+            if(options.Purge == true)
+            {
+                request.Headers.Add("X-IBM-Purge","true");
+            }
+            if (options.Erase == true)
+            {
+                request.Headers.Add("X-IBM-Erase", "true");
+            }
+            var enq = MapEnqueueLock(options.ObtainEnq);
+            if (!string.IsNullOrEmpty(enq))
+            {
+                request.Headers.Add("X-IBM-Obtain-ENQ", enq);
+            }
+            if (!string.IsNullOrEmpty(options.TargetSystem))
+            {
+                request.Headers.Add("X-IBM-Target-System", options.TargetSystem);
+            }
+            if (!string.IsNullOrEmpty(options.TargetSystemUser) && !string.IsNullOrEmpty(options.TargetSystemPassword))
+            {
+                request.Headers.Add("X-IBM-Target-System-User", options.TargetSystemUser);
+                request.Headers.Add("X-IBM-Target-System-Password", options.TargetSystemPassword);
+            }
+
+            using var response = await _httpClient.SendAsync(request,cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+               
+        }
+
+
 
         public async Task<DatasetMemberResponse> ListDatasetMembersAsync(
             string datasetName,
@@ -312,5 +362,203 @@ namespace NetFrame.Services
             EnqueueLock.ExclusiveUpdate => "exclu",
             _ => null
         };
+
+        public async Task<DatasetAttributesResponse?> GetDatasetAttributesAsync(
+            string datasetName,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(datasetName))
+            {
+                throw new ArgumentException("Dataset name cannot be empty.", nameof(datasetName));
+            }
+
+            var endpoint = $"/zosmf/restfiles/ds?dslevel={Uri.EscapeDataString(datasetName)}";
+            var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var listResponse = await _httpClient.GetFromJsonAsync<DatasetListResponse>(endpoint, jsonOptions, cancellationToken).ConfigureAwait(false);
+
+            if (listResponse?.Items != null && listResponse.Items.Count > 0)
+            {
+                var item = listResponse.Items[0];
+                return new DatasetAttributesResponse
+                {
+                    DsName = item.DsName,
+                    Dsorg = item.Dsorg,
+                    Recfm = item.Recfm,
+                    Lrecl = item.Lrecl,
+                    Blksize = item.Blksize,
+                    Volser = item.Volser
+                };
+            }
+
+            return null;
+        }
+
+        public async Task<bool> CreateMemberAsync(
+            string datasetName,
+            string memberName,
+            string content = "",
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(datasetName) || string.IsNullOrWhiteSpace(memberName))
+            {
+                throw new ArgumentException("Dataset and member name cannot be empty.");
+            }
+
+            var endpoint = $"/zosmf/restfiles/ds/{Uri.EscapeDataString(datasetName)}({Uri.EscapeDataString(memberName)})";
+            using var request = new HttpRequestMessage(HttpMethod.Put, endpoint);
+            request.Content = new StringContent(content ?? string.Empty, Utf8NoBom, "text/plain");
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> RecallDatasetAsync(
+            string datasetName,
+            MigratedRecallMode mode = MigratedRecallMode.Wait,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(datasetName))
+            {
+                throw new ArgumentException("Dataset name cannot be empty.", nameof(datasetName));
+            }
+
+            var endpoint = $"/zosmf/restfiles/ds/{Uri.EscapeDataString(datasetName)}";
+            using var request = new HttpRequestMessage(HttpMethod.Put, endpoint);
+            request.Headers.Add("X-IBM-Migrated-Recall", MapMigratedRecall(mode));
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<string?> DownloadDatasetChunkedAsync(
+            string datasetName,
+            string? memberName = null,
+            int startRecord = 0,
+            int recordCount = 1000,
+            CancellationToken cancellationToken = default)
+        {
+            var options = new RetrieveContentOptions
+            {
+                RecordRange = $"{startRecord}-{startRecord + recordCount}"
+            };
+
+            return await RetrieveDatasetContentAsync(datasetName, memberName, options, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task<bool> CopyDatasetAsync(
+            string sourceDatasetName,
+            string targetDatasetName,
+            string? sourceMemberName = null,
+            string? targetMemberName = null,
+            bool replace = true,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(sourceDatasetName) || string.IsNullOrWhiteSpace(targetDatasetName))
+            {
+                throw new ArgumentException("Source and target dataset names cannot be empty.");
+            }
+
+            var sourcePath = string.IsNullOrWhiteSpace(sourceMemberName)
+                ? sourceDatasetName
+                : $"{sourceDatasetName}({sourceMemberName})";
+
+            var targetPath = string.IsNullOrWhiteSpace(targetMemberName)
+                ? targetDatasetName
+                : $"{targetDatasetName}({targetMemberName})";
+
+            var endpoint = $"/zosmf/restfiles/ds/{Uri.EscapeDataString(targetPath)}";
+            using var request = new HttpRequestMessage(HttpMethod.Put, endpoint);
+            request.Headers.Add("X-IBM-Copy-Source", sourcePath);
+
+            if (replace)
+            {
+                request.Headers.Add("X-IBM-Copy-Replace", "true");
+            }
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> CreateVsamClusterAsync(
+            string vsamName,
+            CreateVsamClusterRequest requestBody,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(vsamName))
+            {
+                throw new ArgumentException("VSAM name cannot be empty.", nameof(vsamName));
+            }
+
+            if (requestBody == null)
+            {
+                throw new ArgumentNullException(nameof(requestBody));
+            }
+
+            var endpoint = $"/zosmf/restfiles/ds/{Uri.EscapeDataString(vsamName)}";
+            using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            request.Content = JsonContent.Create(requestBody);
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> MigrateDatasetAsync(
+            string datasetName,
+            bool wait = false,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(datasetName))
+            {
+                throw new ArgumentException("Dataset name cannot be empty.", nameof(datasetName));
+            }
+
+            var endpoint = $"/zosmf/restfiles/ds/{Uri.EscapeDataString(datasetName)}";
+            using var request = new HttpRequestMessage(HttpMethod.Put, endpoint);
+            request.Headers.Add("X-IBM-Migrated-Recall", wait ? "wait" : "migrate");
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<DatasetCompareResult> CompareDatasetsAsync(
+            string sourceDatasetName,
+            string targetDatasetName,
+            string? sourceMemberName = null,
+            string? targetMemberName = null,
+            CancellationToken cancellationToken = default)
+        {
+            var sourceContent = await RetrieveDatasetContentAsync(sourceDatasetName, sourceMemberName, null, cancellationToken).ConfigureAwait(false) ?? string.Empty;
+            var targetContent = await RetrieveDatasetContentAsync(targetDatasetName, targetMemberName, null, cancellationToken).ConfigureAwait(false) ?? string.Empty;
+
+            var sourceLines = new HashSet<string>(sourceContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None));
+            var targetLines = new HashSet<string>(targetContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None));
+
+            var result = new DatasetCompareResult();
+
+            foreach (var line in sourceLines)
+            {
+                if (targetLines.Contains(line))
+                {
+                    result.IdenticalLines.Add(line);
+                }
+                else
+                {
+                    result.SourceOnlyLines.Add(line);
+                }
+            }
+
+            foreach (var line in targetLines)
+            {
+                if (!sourceLines.Contains(line))
+                {
+                    result.TargetOnlyLines.Add(line);
+                }
+            }
+
+            result.AreIdentical = result.SourceOnlyLines.Count == 0 && result.TargetOnlyLines.Count == 0;
+            result.DiffSummary = $"Identical: {result.IdenticalLines.Count}, Source-only: {result.SourceOnlyLines.Count}, Target-only: {result.TargetOnlyLines.Count}";
+
+            return result;
+        }
     }
 }

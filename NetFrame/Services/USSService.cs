@@ -46,7 +46,8 @@ namespace NetFrame.Services
                 throw new ArgumentException("Path cannot be null or empty.", nameof(path));
             }
 
-            var url = $"/zosmf/restfiles/fs?path={Uri.EscapeDataString(path)}";
+            var cleanPath = path.StartsWith("/") ? path : "/" + path;
+            var url = $"/zosmf/restfiles/fs?path={Uri.EscapeDataString(cleanPath)}";
 
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Add("X-IBM-Data-Type", "text");
@@ -64,7 +65,8 @@ namespace NetFrame.Services
                 throw new ArgumentException("Path cannot be null or empty.", nameof(path));
             }
 
-            var url = $"/zosmf/restfiles/fs?path={Uri.EscapeDataString(path)}";
+            var cleanPath = path.StartsWith("/") ? path : "/" + path;
+            var url = $"/zosmf/restfiles/fs?path={Uri.EscapeDataString(cleanPath)}";
 
             using var request = new HttpRequestMessage(HttpMethod.Put, url);
             request.Headers.Add("X-IBM-Data-Type", isBinary ? "binary" : "text");
@@ -81,13 +83,70 @@ namespace NetFrame.Services
                 throw new ArgumentException("Path cannot be null or empty.", nameof(path));
             }
 
-            var url = $"/zosmf/restfiles/fs?path={Uri.EscapeDataString(path)}";
+            var cleanPath = path.StartsWith("/") ? path : "/" + path;
+            var url = $"/zosmf/restfiles/fs{cleanPath}";
 
             using var request = new HttpRequestMessage(HttpMethod.Delete, url);
             if (recursive)
             {
                 request.Headers.Add("X-IBM-Option", "recursive");
             }
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                var queryUrl = $"/zosmf/restfiles/fs?path={Uri.EscapeDataString(cleanPath)}";
+                using var fallbackReq = new HttpRequestMessage(HttpMethod.Delete, queryUrl);
+                if (recursive)
+                {
+                    fallbackReq.Headers.Add("X-IBM-Option", "recursive");
+                }
+                using var fallbackRes = await _httpClient.SendAsync(fallbackReq, cancellationToken).ConfigureAwait(false);
+                fallbackRes.EnsureSuccessStatusCode();
+            }
+        }
+
+        public Task<List<UssItem>> ListUssDirectoryAsync(string path, CancellationToken cancellationToken = default)
+        {
+            return ListDirectoryAsync(path, null, null, cancellationToken);
+        }
+
+        public Task DeleteUssFileAsync(string path, bool recursive = false, CancellationToken cancellationToken = default)
+        {
+            return DeleteFileAsync(path, recursive, cancellationToken);
+        }
+
+        public async Task CreateUssDirectoryAsync(string path, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+            }
+
+            var cleanPath = path.StartsWith("/") ? path : "/" + path;
+            var url = $"/zosmf/restfiles/fs{cleanPath}";
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Add("X-IBM-Option", "directory");
+            request.Content = JsonContent.Create(new { request = "directory" });
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task ChangeUssPermissionsAsync(string path, string mode, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(mode))
+            {
+                throw new ArgumentException("Path and mode cannot be null or empty.");
+            }
+
+            var cleanPath = path.StartsWith("/") ? path : "/" + path;
+            var formattedMode = mode.Length == 3 ? "0" + mode : mode;
+            var url = $"/zosmf/restfiles/fs?path={Uri.EscapeDataString(cleanPath)}";
+
+            using var request = new HttpRequestMessage(HttpMethod.Put, url);
+            request.Headers.Add("X-IBM-Option", "chmod");
+            request.Content = JsonContent.Create(new { request = "chmod", mode = formattedMode });
 
             using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
