@@ -22,5 +22,13 @@ namespace NetFrame.Services
         Task<JobFeedback> ChangeJobClassAsync(string jobName, string jobId, string newJobClass, string version = "2.0", CancellationToken cancellationToken = default);
         Task<JobFeedback> CancelJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default);
         Task<JobFeedback> DeleteJobAsync(string jobName, string jobId, string version = "2.0", CancellationToken cancellationToken = default);
+
+        Task<ZosJob> SubmitJobAsync(string jclContent, string? intrdrMode = null, CancellationToken cancellationToken = default);
+        Task<ZosJob> SubmitJobFromDatasetAsync(string datasetName, string? memberName = null, CancellationToken cancellationToken = default);
+        Task<ZosJob?> GetJobAsync(string jobName, string jobId, CancellationToken cancellationToken = default);
+        Task<string> GetAllSpoolContentAsync(string jobName, string jobId, CancellationToken cancellationToken = default);
+        Task<JobFeedback> CancelAndPurgeJobAsync(string jobName, string jobId, CancellationToken cancellationToken = default);
+        Task<ZosJob> SubmitJclScanAsync(string jclContent, CancellationToken cancellationToken = default);
+        Task<ZosJob> WaitForJobCompletionAsync(string jobName, string jobId, int maxWaitSeconds = 60, int pollIntervalMs = 2000, CancellationToken cancellationToken = default);
     }
 }

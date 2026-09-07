@@ -276,5 +276,110 @@ namespace NetFrame.Services
             }
             return await response.Content.ReadFromJsonAsync<JobFeedback>(cancellationToken: cancellationToken).ConfigureAwait(false) ?? new JobFeedback();
         }
+
+        public async Task<ZosJob> SubmitJobAsync(string jclContent, string? intrdrMode = null, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(jclContent)) throw new ArgumentException("JCL content cannot be empty.", nameof(jclContent));
+
+            using var request = new HttpRequestMessage(HttpMethod.Put, "/zosmf/restjobs/jobs");
+            request.Content = new StringContent(jclContent, Encoding.UTF8, "text/plain");
+
+            if (!string.IsNullOrWhiteSpace(intrdrMode))
+            {
+                request.Headers.Add("X-IBM-Intrdr-Mode", intrdrMode);
+            }
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<ZosJob>(DefaultJsonOptions, cancellationToken).ConfigureAwait(false)
+                ?? throw new InvalidOperationException("Failed to parse submitted job response.");
+        }
+
+        public async Task<ZosJob> SubmitJobFromDatasetAsync(string datasetName, string? memberName = null, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(datasetName)) throw new ArgumentException("Dataset name cannot be empty.", nameof(datasetName));
+
+            var fullPath = string.IsNullOrWhiteSpace(memberName)
+                ? $"//'{datasetName.Trim().ToUpperInvariant()}'"
+                : $"//'{datasetName.Trim().ToUpperInvariant()}({memberName.Trim().ToUpperInvariant()})'";
+
+            using var request = new HttpRequestMessage(HttpMethod.Put, "/zosmf/restjobs/jobs");
+            request.Content = JsonContent.Create(new { file = fullPath });
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<ZosJob>(DefaultJsonOptions, cancellationToken).ConfigureAwait(false)
+                ?? throw new InvalidOperationException("Failed to parse submitted job response.");
+        }
+
+        public async Task<ZosJob?> GetJobAsync(string jobName, string jobId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(jobName)) throw new ArgumentException("Job name cannot be empty.", nameof(jobName));
+            if (string.IsNullOrWhiteSpace(jobId)) throw new ArgumentException("Job ID cannot be empty.", nameof(jobId));
+
+            var endpoint = $"/zosmf/restjobs/jobs/{Uri.EscapeDataString(jobName)}/{Uri.EscapeDataString(jobId)}";
+            using var response = await _httpClient.GetAsync(endpoint, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<ZosJob>(DefaultJsonOptions, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task<string> GetAllSpoolContentAsync(string jobName, string jobId, CancellationToken cancellationToken = default)
+        {
+            var files = await ListJobFilesAsync(jobName, jobId, cancellationToken).ConfigureAwait(false);
+            if (files == null || files.Count == 0) return string.Empty;
+
+            var sb = new StringBuilder();
+            foreach (var file in files)
+            {
+                if (!file.Id.HasValue) continue;
+
+                var content = await GetJobFileRecordsAsync(jobName, jobId, file.Id.Value.ToString(), cancellationToken).ConfigureAwait(false);
+                var ddName = file.DdName ?? "OUTPUT";
+                var stepName = !string.IsNullOrEmpty(file.StepName) ? $" ({file.StepName})" : "";
+
+                sb.AppendLine($"========== [DD: {ddName}{stepName} - ID: {file.Id}] ==========");
+                sb.AppendLine(content);
+                sb.AppendLine();
+            }
+
+            return sb.ToString();
+        }
+
+        public async Task<JobFeedback> CancelAndPurgeJobAsync(string jobName, string jobId, CancellationToken cancellationToken = default)
+        {
+            var endpoint = $"/zosmf/restjobs/jobs/{Uri.EscapeDataString(jobName)}/{Uri.EscapeDataString(jobId)}";
+            var requestBody = new { request = "cancel", version = "2.0", purge = true };
+            return await PutJobActionAsync(endpoint, requestBody, cancellationToken).ConfigureAwait(false);
+        }
+
+        public Task<ZosJob> SubmitJclScanAsync(string jclContent, CancellationToken cancellationToken = default)
+        {
+            return SubmitJobAsync(jclContent, intrdrMode: "SCAN", cancellationToken: cancellationToken);
+        }
+
+        public async Task<ZosJob> WaitForJobCompletionAsync(string jobName, string jobId, int maxWaitSeconds = 60, int pollIntervalMs = 2000, CancellationToken cancellationToken = default)
+        {
+            var startTime = DateTime.UtcNow;
+            var maxDuration = TimeSpan.FromSeconds(maxWaitSeconds);
+
+            while (DateTime.UtcNow - startTime < maxDuration)
+            {
+                var job = await GetJobAsync(jobName, jobId, cancellationToken).ConfigureAwait(false);
+                if (job == null) throw new InvalidOperationException($"Job {jobName}({jobId}) not found.");
+
+                if (string.Equals(job.Status, "OUTPUT", StringComparison.OrdinalIgnoreCase))
+                {
+                    return job;
+                }
+
+                await Task.Delay(pollIntervalMs, cancellationToken).ConfigureAwait(false);
+            }
+
+            var finalJob = await GetJobAsync(jobName, jobId, cancellationToken).ConfigureAwait(false);
+            return finalJob ?? throw new TimeoutException($"Job {jobName}({jobId}) did not reach OUTPUT within {maxWaitSeconds}s.");
+        }
     }
 }

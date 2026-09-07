@@ -20,7 +20,7 @@ namespace NetFrame.Services
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public async Task<List<string>> ListDatasetsAsync(string dsLevel, CancellationToken cancellationToken = default)
+        public async Task<DatasetListResponse> ListDatasetsDetailedAsync(string dsLevel, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(dsLevel))
             {
@@ -29,6 +29,12 @@ namespace NetFrame.Services
 
             var endpoint = $"/zosmf/restfiles/ds?dslevel={Uri.EscapeDataString(dsLevel)}";
             var response = await _httpClient.GetFromJsonAsync<DatasetListResponse>(endpoint, cancellationToken).ConfigureAwait(false);
+            return response ?? new DatasetListResponse();
+        }
+
+        public async Task<List<string>> ListDatasetsAsync(string dsLevel, CancellationToken cancellationToken = default)
+        {
+            var response = await ListDatasetsDetailedAsync(dsLevel, cancellationToken).ConfigureAwait(false);
             
             var datasetNames = new List<string>();
             if (response?.Items != null)

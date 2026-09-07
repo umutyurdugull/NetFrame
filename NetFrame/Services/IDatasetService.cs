@@ -9,6 +9,8 @@ namespace NetFrame.Services
     {
         Task<List<string>> ListDatasetsAsync(string dsLevel, CancellationToken cancellationToken = default);
 
+        Task<DatasetListResponse> ListDatasetsDetailedAsync(string dsLevel, CancellationToken cancellationToken = default);
+
         Task<DatasetMemberResponse> ListDatasetMembersAsync(
             string datasetName,
             ListMembersOptions? options = null,
