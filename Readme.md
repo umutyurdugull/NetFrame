@@ -3,7 +3,7 @@
 [![NuGet Version](https://img.shields.io/nuget/v/DotNetFrame.svg)](https://www.nuget.org/packages/DotNetFrame/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4.svg)](https://dotnet.microsoft.com/)
-[![Documentation](https://img.shields.io/badge/Docs-Vercel-black.svg)](https://netframe.vercel.app)
+[![Documentation](https://img.shields.io/badge/Docs-Vercel-black.svg)](https://netframedocs.vercel.app)
 
 **DotNetFrame** is a high-performance, thread-safe, and resilient .NET 10 SDK that wraps IBM's z/OS Management Facility (z/OSMF) REST APIs. It empowers modern .NET applications to interact seamlessly and securely with enterprise z/OS mainframe environments—from core batch jobs and datasets to cloud provisioning, resource pooling, and sysplex management.
 
